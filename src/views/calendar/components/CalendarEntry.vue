@@ -63,7 +63,10 @@ const tooltip = computed(() => {
 </script>
 
 <style scoped lang="scss">
+// traka je obojena bojom grupe (godišnji, porodica, plaćeno, ostalo) da se vidi i u tamnoj temi
 .calendar-entry {
+  --calendar-entry-tint: color-mix(in srgb, var(--calendar-entry-accent) 30%, #{$surface-default});
+
   @include flex(flex-start, center, $space-4);
   width: 100%;
   min-width: 0;
@@ -72,23 +75,27 @@ const tooltip = computed(() => {
   font-family: inherit;
   font-size: $text-12;
   line-height: $leading-xs;
-  color: var(--calendar-entry-accent);
+  color: $fg-heading;
   text-align: left;
-  background: $cold-50;
+  background: var(--calendar-entry-tint);
   border: none;
-  border-radius: $radius-xs;
+  border-radius: $radius-sm;
   cursor: pointer;
   transition: $transition;
 
+  :deep(.v-icon),
+  :deep(.material-icons-outlined) {
+    color: var(--calendar-entry-accent);
+  }
+
   &:hover {
-    background: $cold-100;
+    background: color-mix(in srgb, var(--calendar-entry-accent) 42%, #{$surface-default});
   }
 
   &:focus-visible {
     outline: 1px solid $border-action-focused;
     outline-offset: 1px;
   }
-
 
   &__name {
     @include truncate;
@@ -100,29 +107,28 @@ const tooltip = computed(() => {
     @include truncate;
     flex-shrink: 100;
     min-width: 0;
+    color: $fg-body;
   }
 
   &--approved {
-    border-left: 4px solid var(--calendar-entry-accent);
+    border-left: 3px solid var(--calendar-entry-accent);
   }
 
-
+  // na čekanju: svjetlija podloga i isprekidan okvir u boji grupe
   &--pending {
-    border: 1px dashed $cold-225;
-    border-radius: $radius-sm;
+    background: color-mix(in srgb, var(--calendar-entry-accent) 14%, #{$surface-default});
+    border: 1px dashed var(--calendar-entry-accent);
   }
 
   &--holiday {
-    background: color-mix(in srgb, var(--calendar-entry-accent) 10%, transparent);
+    background: color-mix(in srgb, var(--calendar-entry-accent) 14%, transparent);
     border: 1px solid var(--calendar-entry-accent);
-    border-radius: $radius-sm;
     cursor: default;
 
     &:hover {
-      background: color-mix(in srgb, var(--calendar-entry-accent) 10%, transparent);
+      background: color-mix(in srgb, var(--calendar-entry-accent) 14%, transparent);
     }
   }
-
 
   &.is-cut-start {
     border-left-style: none;

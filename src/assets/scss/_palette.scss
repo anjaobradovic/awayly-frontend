@@ -33,7 +33,13 @@ $palette-light: (
   true-850: #262626,
 
   warm-50: #f5f4f2,
-  error-100: #fbdcdc
+  error-100: #fbdcdc,
+
+  // kategorije odsustva
+  absence-vacation: #0284c7,
+  absence-family: #0e9ba0,
+  absence-paid: #f59310,
+  absence-other: #6b7280
 );
 
 // tamna tema, neutralne rampe su obrnute: "svijetla" polja postaju tamna i obrnuto
@@ -65,7 +71,13 @@ $palette-dark: (
   true-850: #2e2e2e,
 
   warm-50: #262a33,
-  error-100: #4a2024
+  error-100: #4a2024,
+
+  // svjetlije nijanse da se vide na tamnoj podlozi
+  absence-vacation: #38bdf8,
+  absence-family: #2dd4bf,
+  absence-paid: #fbbf24,
+  absence-other: #a1a1aa
 );
 
 // boja akcenta, bira je admin u Profilu kompanije

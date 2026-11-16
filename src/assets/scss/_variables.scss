@@ -80,10 +80,10 @@ $warning-950: #190e01;
 $teal-500: #157d7d;
 
 // Kategorije odsustva
-$absence-vacation: #0284c7;
-$absence-family: #0e9ba0;
-$absence-paid: $warning-500;
-$absence-other: #6b7280;
+$absence-vacation: themed(absence-vacation);
+$absence-family: themed(absence-family);
+$absence-paid: themed(absence-paid);
+$absence-other: themed(absence-other);
 
 // foundation
 $white: #ffffff;
