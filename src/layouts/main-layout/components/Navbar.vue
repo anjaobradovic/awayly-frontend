@@ -1,5 +1,14 @@
 <template>
   <header class="navbar">
+    <button
+      type="button"
+      class="navbar__menu"
+      :aria-label="$t('nav.main')"
+      @click="emit('menu')"
+    >
+      <VIcon name="menu" :size="24" />
+    </button>
+
     <div class="navbar__titles">
       <VCompanyLogo
         class="navbar__company"
@@ -65,6 +74,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useCompanyStore } from "@/stores/company";
 import VBreadcrumbs from "@/components/VBreadcrumbs.vue";
 import VCompanyLogo from "@/components/VCompanyLogo.vue";
+import VIcon from "@/components/VIcon.vue";
 import VDropdown from "@/components/VDropdown.vue";
 import VMenu from "@/components/VMenu.vue";
 import VMenuItem from "@/components/VMenuItem.vue";
@@ -76,6 +86,8 @@ import NotificationsMenu from "./NotificationsMenu.vue";
 import ProfileSettingsDialog from "./ProfileSettingsDialog.vue";
 import ResetTotpDialog from "./ResetTotpDialog.vue";
 import ChangePasswordDialog from "./ChangePasswordDialog.vue";
+
+const emit = defineEmits(["menu"]);
 
 const route = useRoute();
 const auth_store = useAuthStore();
@@ -138,6 +150,25 @@ function setDialog(name, open) {
   backdrop-filter: blur(14px) saturate(1.4);
   border-bottom: 1px solid alpha($border-default, 0.7);
 
+  // dugme za meni postoji samo na telefonu
+  &__menu {
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: $icon-default;
+    background: $surface-default;
+    border: 1px solid $border-default;
+    border-radius: $radius-lg;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 1px solid $border-action-focused;
+    }
+  }
+
   &__titles {
     @include flex(center, flex-start, $space-8, column);
     flex: 1;
@@ -168,6 +199,12 @@ function setDialog(name, open) {
   }
 
   // tablet: ime korisnika ostaje samo kao avatar, dugmad stranice prelaze u drugi red
+  @include respond-to("tablet-sm") {
+    &__menu {
+      display: flex;
+    }
+  }
+
   @include respond-to("tablet") {
     flex-wrap: wrap;
     gap: $space-12 $space-16;
@@ -195,8 +232,10 @@ function setDialog(name, open) {
     }
 
     &__company {
-      flex: 1;
+      flex: 1 1 0;
       min-width: 0;
+      max-width: 8rem;
+      height: 1.75rem !important;
       font-size: $text-18;
     }
 

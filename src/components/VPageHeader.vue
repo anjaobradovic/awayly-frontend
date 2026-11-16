@@ -72,6 +72,34 @@ defineProps({
         justify-content: flex-start;
       }
     }
+
+    // telefon: opis ispod naslova, bez tačke, manji naslov
+    @include respond-to("mobile") {
+      gap: $space-12;
+      padding: $space-10 $space-12;
+
+      &__titles {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: $space-2;
+      }
+
+      &__title {
+        font-size: $text-20;
+      }
+
+      &__dot {
+        display: none;
+      }
+
+      &__description {
+        font-size: $text-13;
+      }
+
+      &__actions {
+        gap: $space-8;
+      }
+    }
   }
 }
 </style>

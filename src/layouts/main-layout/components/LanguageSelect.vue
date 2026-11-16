@@ -71,6 +71,13 @@ const current = computed(() => locale_store.current);
     color: $fg-heading;
   }
 
+  // telefon: samo zastavica
+  @include respond-to("mobile") {
+    &__code {
+      display: none;
+    }
+  }
+
   &__list {
     width: 16.5625rem;
     max-width: calc(100vw - #{$space-32});

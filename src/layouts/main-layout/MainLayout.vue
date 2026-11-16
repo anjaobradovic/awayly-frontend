@@ -2,12 +2,13 @@
   <div class="main-layout">
     <VSidebar class="main-layout__sidebar" @action="runAction" />
 
-    <navbar class="main-layout__navbar" />
+    <navbar class="main-layout__navbar" @menu="is_mobile_nav_open = true" />
 
     <content-renderer class="main-layout__content" />
 
     <AdSettingsDrawer v-model:open="is_ad_settings_open" />
     <CompanyProfileDrawer v-model:open="is_company_profile_open" />
+    <MobileNav v-model:open="is_mobile_nav_open" @action="runAction" />
   </div>
 </template>
 
@@ -18,10 +19,13 @@ import Navbar from "./components/Navbar.vue";
 import ContentRenderer from "../components/ContentRenderer.vue";
 import AdSettingsDrawer from "./components/AdSettingsDrawer.vue";
 import CompanyProfileDrawer from "./components/CompanyProfileDrawer.vue";
+import MobileNav from "./components/MobileNav.vue";
 
 // Podešavanja > Integracije otvara panel preko bilo koje stranice
 const is_ad_settings_open = ref(false);
 const is_company_profile_open = ref(false);
+// na telefonu sidebar je sakriven, meni se otvara iz navbara
+const is_mobile_nav_open = ref(false);
 
 function runAction(action) {
   if (action === "integrations") is_ad_settings_open.value = true;
@@ -62,6 +66,18 @@ function runAction(action) {
     overflow-x: hidden;
     // stranice duže od ekrana skroluju unutar ove oblasti, navbar i sidebar ostaju
     overflow-y: auto;
+  }
+
+  // telefon: bez sidebara, navigacija ide kroz meni u navbaru
+  @include respond-to("tablet-sm") {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "navbar"
+      "content";
+
+    &__sidebar {
+      display: none;
+    }
   }
 }
 </style>

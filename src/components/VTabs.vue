@@ -34,8 +34,20 @@ const model = defineModel({ type: [String, Number], required: true });
   .v-tabs {
     @include flex(flex-start, flex-end, $space-12);
     padding: $space-12 $space-24 0 $space-16;
+    // previše tabova za širinu: skrol vodoravno, bez scrollbara
+    overflow-x: auto;
+    scrollbar-width: none;
     background: $surface-default;
     border-bottom: 1px solid $border-default;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    @include respond-to("mobile") {
+      gap: $space-4;
+      padding: $space-8 $space-8 0;
+    }
 
     &__tab {
       position: relative;
@@ -75,6 +87,12 @@ const model = defineModel({ type: [String, Number], required: true });
         background: $surface-action;
         opacity: 0;
         transition: $transition;
+      }
+
+      @include respond-to("mobile") {
+        flex-shrink: 0;
+        padding: $space-8 $space-12;
+        font-size: $text-14;
       }
 
       &.is-active {
