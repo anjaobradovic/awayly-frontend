@@ -114,7 +114,7 @@ export const createRoles = () => [
 // zaposleni (4.2 / 4.3)
 // [ime, prezime, tim, uloga, nadređeni, status, religija, preostalo/ukupno godišnjeg]
 const USER_ROWS = [
-  ["Milan", "Stevanović", 3, 1, null, "ACTIVE", "ORTHODOX", [12, 22]],
+  ["Anja", "Obradović", 3, 1, null, "ACTIVE", "ORTHODOX", [12, 22]],
   ["Joan", "Heller", 3, 3, 1, "ACTIVE", "CATHOLIC", [8, 21]],
   ["Cynthia", "Marsh", 4, 3, 1, "ACTIVE", "NONE", [15, 22]],
   ["Rita", "Krajcik", 5, 3, 1, "ACTIVE", "ORTHODOX", [5, 20]],
@@ -142,7 +142,7 @@ export const createUsers = () =>
       id: index + 1,
       first_name,
       last_name,
-      email: ascii(`${first_name}.${last_name}@novatech.rs`).toLowerCase(),
+      email: ascii(`${first_name}.${last_name}@codebron.rs`).toLowerCase(),
       phone_number: `+38164${String(1234567 + index * 7919).slice(0, 7)}`,
       hire_date: `${2018 + (index % 7)}-${pad((index % 12) + 1)}-01T00:00:00Z`,
       date_of_birth: `${1985 + (index % 13)}-${pad(((index * 5) % 12) + 1)}-${pad((index % 27) + 1)}T00:00:00Z`,
@@ -399,7 +399,7 @@ export const createAuditLog = (users) => {
       }
     ],
     ["USER", 1, "POLICY_SCHEDULED", { version: 4, effective_from: `${YEAR + 1}-01-01T00:00:00Z` }],
-    ["USER", 5, "USER_CREATED", { email: "doreen.sanford@novatech.rs" }],
+    ["USER", 5, "USER_CREATED", { email: "doreen.sanford@codebron.rs" }],
     ["USER", 1, "HOLIDAY_CREATED", { name: "Dan kompanije", date: `${YEAR}-06-12T00:00:00Z` }],
     ["USER", 1, "ROLE_UPDATED", { name: "Menadžer tima" }],
     [
@@ -427,7 +427,7 @@ export const createAuditLog = (users) => {
         end_date: daysFromToday(0)
       }
     ],
-    ["USER", 5, "USER_DEACTIVATED", { email: "keith.hane@novatech.rs" }],
+    ["USER", 5, "USER_DEACTIVATED", { email: "keith.hane@codebron.rs" }],
     ["USER", 1, "REPORT_GENERATED", { name: "Kiwi" }]
   ];
 
@@ -449,10 +449,10 @@ export const createAuditLog = (users) => {
 
 // AD (19.x)
 export const createAdSettings = () => ({
-  ldap_host: "ldap.novatech.local",
+  ldap_host: "ldap.codebron.local",
   ldap_port: 636,
-  ldap_base_dn: "dc=novatech,dc=local",
-  ldap_bind_dn: "cn=awayly,ou=service,dc=novatech,dc=local",
+  ldap_base_dn: "dc=codebron,dc=local",
+  ldap_bind_dn: "cn=awayly,ou=service,dc=codebron,dc=local",
   use_ssl: true,
   tested_at: null,
   auth_type: "LOCAL"

@@ -22,66 +22,58 @@
       <p v-if="message" class="dashboard__message">{{ message }}</p>
 
       <div v-else class="dashboard__grid">
-        <div class="dashboard__column">
-          <DashboardWelcome
-            :name="first_name"
-            :company="company_store.name"
-            :team="dashboard_store.team_name"
-            :free-days="dashboard_store.annual.remaining"
-            :pending="dashboard_store.requests.pending"
-          />
+        <DashboardWelcome
+          class="dashboard__hero"
+          :name="first_name"
+          :company="company_store.name"
+          :team="dashboard_store.team_name"
+          :free-days="dashboard_store.annual.remaining"
+          :pending="dashboard_store.requests.pending"
+          :approved="dashboard_store.requests.approved"
+          @requests="openMyRequests"
+        />
 
-          <!-- novi dani = preostalo - preneseni, 15.2 ih vraća zajedno -->
-          <DashboardBalanceCard
-            :title="$t('dashboard.balance.annual_title')"
-            :remaining="dashboard_store.annual.remaining"
-            :total="dashboard_store.annual.entitled"
-            :segments="[
-              { value: new_days, color: 'primary-400' },
-              { value: dashboard_store.carryover.days, color: 'primary-350' }
-            ]"
-            :legend="[
-              {
-                label: $t('dashboard.balance.new_days'),
-                color: 'primary-400',
-                value: new_days
-              },
-              {
-                label: $t('dashboard.balance.carryover_days'),
-                color: 'primary-350',
-                value: dashboard_store.carryover.days
-              },
-              {
-                label: $t('dashboard.balance.used_days'),
-                color: 'cold-300',
-                value: dashboard_store.annual.used
-              }
-            ]"
-          />
+        <!-- novi dani = preostalo - preneseni, 15.2 ih vraća zajedno -->
+        <DashboardBalanceCard
+          class="dashboard__annual"
+          :title="$t('dashboard.balance.annual_title')"
+          :remaining="dashboard_store.annual.remaining"
+          :total="dashboard_store.annual.entitled"
+          :segments="[
+            { value: new_days, color: 'primary-400' },
+            { value: dashboard_store.carryover.days, color: 'primary-350' }
+          ]"
+          :legend="[
+            {
+              label: $t('dashboard.balance.new_days'),
+              color: 'primary-400',
+              value: new_days
+            },
+            {
+              label: $t('dashboard.balance.carryover_days'),
+              color: 'primary-350',
+              value: dashboard_store.carryover.days
+            },
+            {
+              label: $t('dashboard.balance.used_days'),
+              color: 'cold-300',
+              value: dashboard_store.annual.used
+            }
+          ]"
+        />
 
-          <DashboardBalanceCard
-            :title="$t('dashboard.balance.general_title')"
-            :remaining="dashboard_store.general.remaining"
-            :total="dashboard_store.general.entitled"
-            :segments="[{ value: dashboard_store.general.remaining, color: 'primary-400' }]"
-            :legend="[
-              { label: $t('dashboard.balance.remaining_days'), color: 'primary-400' },
-              { label: $t('dashboard.balance.used_days'), color: 'cold-300' }
-            ]"
-            centered
-          />
-        </div>
-
-        <div class="dashboard__column">
-          <DashboardRequestStats
-            class="dashboard__stats"
-            :pending="dashboard_store.requests.pending"
-            :approved="dashboard_store.requests.approved"
-            @details="openMyRequests"
-          />
-
-          <DashboardMonthlyChart class="dashboard__chart" :graphs="dashboard_store.graphs" />
-        </div>
+        <DashboardBalanceCard
+          class="dashboard__general"
+          :title="$t('dashboard.balance.general_title')"
+          :remaining="dashboard_store.general.remaining"
+          :total="dashboard_store.general.entitled"
+          :segments="[{ value: dashboard_store.general.remaining, color: 'primary-400' }]"
+          :legend="[
+            { label: $t('dashboard.balance.remaining_days'), color: 'primary-400' },
+            { label: $t('dashboard.balance.used_days'), color: 'cold-300' }
+          ]"
+          centered
+        />
 
         <DashboardUpcoming
           class="dashboard__upcoming"
@@ -89,6 +81,8 @@
           @all="openMyRequests"
           @details="(id) => details_ref?.show(id)"
         />
+
+        <DashboardMonthlyChart class="dashboard__chart" :graphs="dashboard_store.graphs" />
       </div>
     </div>
 
@@ -106,7 +100,6 @@ import SubmitRequestButton from "@/views/requests/components/SubmitRequestButton
 import RequestDetailsDrawer from "@/views/requests/components/RequestDetailsDrawer.vue";
 import DashboardWelcome from "./components/DashboardWelcome.vue";
 import DashboardBalanceCard from "./components/DashboardBalanceCard.vue";
-import DashboardRequestStats from "./components/DashboardRequestStats.vue";
 import DashboardMonthlyChart from "./components/DashboardMonthlyChart.vue";
 import DashboardUpcoming from "./components/DashboardUpcoming.vue";
 import { PANEL_TABS, formatDate } from "./dashboard-config";
@@ -203,25 +196,37 @@ onUnmounted(() => dashboard_store.resetStore());
     flex-shrink: 0;
   }
 
+  // bento raspored: pozdrav preko cijele širine, ispod salda, grafikon i odsustva
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "hero hero hero"
+      "annual general upcoming"
+      "chart chart upcoming";
     gap: $space-16;
     align-items: stretch;
   }
 
-  &__column {
-    @include flex(flex-start, stretch, $space-16, column);
-    min-width: 0;
+  &__hero {
+    grid-area: hero;
   }
 
-  // statistika iste visine kao pozdrav lijevo
-  &__stats {
-    min-height: 14.5rem;
+  &__annual {
+    grid-area: annual;
+  }
+
+  &__general {
+    grid-area: general;
+  }
+
+  &__upcoming {
+    grid-area: upcoming;
   }
 
   &__chart {
-    min-height: 25.5rem;
+    grid-area: chart;
+    min-height: 22rem;
   }
 
   &__message {
@@ -231,14 +236,15 @@ onUnmounted(() => dashboard_store.resetStore());
     text-align: center;
   }
 
-  // manji ekran: pozdrav i salda lijevo, statistika desno, odsustva ispod
+  // manji ekran: dvije kolone, odsustva na dnu
   @include respond-to("laptop-sm") {
     &__grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    &__upcoming {
-      grid-column: 1 / -1;
+      grid-template-areas:
+        "hero hero"
+        "annual general"
+        "chart chart"
+        "upcoming upcoming";
     }
   }
 
@@ -253,6 +259,7 @@ onUnmounted(() => dashboard_store.resetStore());
 
     &__grid {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "hero" "annual" "general" "chart" "upcoming";
     }
   }
 }

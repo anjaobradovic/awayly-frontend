@@ -32,6 +32,10 @@ function runAction(action) {
 <style lang="scss" scoped>
 .main-layout {
   display: grid;
+  // blagi sjaj akcenta iza providne trake i sidebara
+  background:
+    radial-gradient(40rem 20rem at 85% -6rem, $alpha-primary-10 0%, transparent 70%),
+    $surface-background;
   // sidebar drži punu visinu lijevo, navbar i sadržaj idu u desnu kolonu
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);

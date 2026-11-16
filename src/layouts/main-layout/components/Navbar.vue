@@ -1,7 +1,15 @@
 <template>
   <header class="navbar">
     <div class="navbar__titles">
-      <p class="navbar__company">{{ company_store.name }}</p>
+      <VCompanyLogo
+        class="navbar__company"
+        :src="company_store.company?.logo_url"
+        :name="company_store.name"
+        :view-box="company_store.company?.logo_crop"
+        :width="company_store.company?.logo_size?.[0]"
+        :image-height="company_store.company?.logo_size?.[1]"
+        :height="34"
+      />
       <VBreadcrumbs v-if="breadcrumbs.length" :items="breadcrumbs" />
     </div>
 
@@ -56,6 +64,7 @@ import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useCompanyStore } from "@/stores/company";
 import VBreadcrumbs from "@/components/VBreadcrumbs.vue";
+import VCompanyLogo from "@/components/VCompanyLogo.vue";
 import VDropdown from "@/components/VDropdown.vue";
 import VMenu from "@/components/VMenu.vue";
 import VMenuItem from "@/components/VMenuItem.vue";
@@ -124,8 +133,10 @@ function setDialog(name, open) {
   position: relative;
   @include flex(flex-start, center, $space-24);
   padding: $space-12 $space-16;
-  background: $surface-default;
-  box-shadow: $shadow-header;
+  // staklo: providna podloga sa zamućenjem, bez senke
+  background: alpha($surface-default, 0.55);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid alpha($border-default, 0.7);
 
   &__titles {
     @include flex(center, flex-start, $space-8, column);

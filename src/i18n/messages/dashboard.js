@@ -40,7 +40,12 @@ export default {
       summary:
         "Sve je spremno za planiranje tvog vremena. Trenutno imaš {free_days} na raspolaganju i {pending} na čekanju.",
       free_days: "{count} slobodan dan | {count} slobodna dana | {count} slobodnih dana",
-      requests: "{count} zahtev | {count} zahteva | {count} zahteva"
+      requests: "{count} zahtev | {count} zahteva | {count} zahteva",
+      kpi_free: "Slobodnih dana",
+      kpi_pending: "Na čekanju",
+      kpi_approved: "Odobreno",
+      open_calendar: "Kalendar",
+      open_requests: "Moji zahtevi"
     },
     carryover_notice:
       "Preneseni dani starog godišnjeg odmora ({days}) važe do {date}. Nakon toga više neće biti dostupni.",
@@ -123,7 +128,12 @@ export default {
       summary:
         "Everything's ready for planning your time. You have {free_days} available and {pending} pending.",
       free_days: "{count} day off | {count} days off",
-      requests: "{count} request | {count} requests"
+      requests: "{count} request | {count} requests",
+      kpi_free: "Days off left",
+      kpi_pending: "Pending",
+      kpi_approved: "Approved",
+      open_calendar: "Calendar",
+      open_requests: "My requests"
     },
     carryover_notice:
       "Carried-over days from last year's leave ({days}) are valid until {date}. After that they will no longer be available.",

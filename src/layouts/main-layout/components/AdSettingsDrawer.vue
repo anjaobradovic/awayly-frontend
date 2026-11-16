@@ -28,7 +28,7 @@
         <VBaseInput
           v-model="form.ldap_base_dn"
           label="Base DN"
-          :placeholder="$t('layout.ad_settings.example', { value: 'dc=novatech,dc=local' })"
+          :placeholder="$t('layout.ad_settings.example', { value: 'dc=codebron,dc=local' })"
           appearance="outlined"
           :clearable="false"
         />
@@ -36,7 +36,7 @@
           v-model="form.ldap_bind_dn"
           label="Bind DN"
           :placeholder="
-            $t('layout.ad_settings.example', { value: 'serviceaccount@novatech.local' })
+            $t('layout.ad_settings.example', { value: 'serviceaccount@codebron.local' })
           "
           appearance="outlined"
           :clearable="false"

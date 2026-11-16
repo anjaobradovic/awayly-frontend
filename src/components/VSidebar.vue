@@ -89,14 +89,13 @@ watch(() => route.path, closeMenu);
   @include flex(flex-start, center, 0, column);
   height: 100%;
   padding: $space-4 $space-8 0;
-  background: $sidebar-background;
-  border-right: 1px solid $sidebar-border;
+  // providan, stapa se sa pozadinom stranice
+  background: transparent;
 
   &__logo {
     @include flex(center, center);
     width: 100%;
     height: 5rem;
-    border-bottom: 1px solid $sidebar-border;
     border-radius: $radius-lg;
     transition: $transition;
 
@@ -105,7 +104,7 @@ watch(() => route.path, closeMenu);
     }
 
     &:focus-visible {
-      outline: 1px solid $white;
+      outline: 1px solid $border-action-focused;
       outline-offset: -2px;
     }
   }
@@ -120,11 +119,10 @@ watch(() => route.path, closeMenu);
     width: 3.75rem;
     height: 5rem;
     margin-top: auto;
-    border-top: 1px solid $sidebar-border;
     font-size: $text-12;
     font-weight: $weight-semibold;
     line-height: $leading-xs;
-    color: alpha($white, 0.45);
+    color: $cold-350;
     text-align: center;
   }
 }

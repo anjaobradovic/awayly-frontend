@@ -189,15 +189,16 @@ $table-scrollbar: 6px;
       display: flex;
       flex-shrink: 0;
       padding: 0 calc(#{$space-12} + #{$table-scrollbar}) 0 $space-12;
-      background: $surface-table-head;
-      box-shadow: $shadow-header;
+      background: $surface-default;
+      border-bottom: 1px solid $border-default;
     }
 
+    // redovi su spojeni, odvaja ih samo tanka linija
     &__body {
-      @include flex(flex-start, stretch, $space-8, column);
+      @include flex(flex-start, stretch, 0, column);
       flex: 1;
       min-height: 0;
-      padding: $space-12;
+      padding: 0;
       overflow-y: auto;
       // mjesto za scrollbar uvijek postoji da se kolone ne pomjeraju
       scrollbar-gutter: stable;
@@ -225,18 +226,29 @@ $table-scrollbar: 6px;
       }
     }
 
+    // lijeva traka u boji akcenta se vidi na hover
     &__row {
+      position: relative;
       @include flex(flex-start, center, 0);
       flex-shrink: 0;
-      min-height: 3rem;
-      padding: $space-12 0;
+      min-height: 3.25rem;
+      padding: $space-12 $space-12 $space-12 calc(#{$space-12} - 2px);
       background: $surface-default;
-      border: 1px solid $cold-75;
-      border-radius: $radius-xs;
+      border-bottom: 1px solid $border-default;
+      border-left: 2px solid transparent;
       transition: $transition;
 
+      &:nth-child(even) {
+        background: alpha($cold-50, 0.5);
+      }
+
       &:hover {
-        background: $surface-default-hover;
+        background: $alpha-primary-5;
+        border-left-color: $primary-500;
+      }
+
+      &:last-child {
+        border-bottom-color: transparent;
       }
 
       &.is-clickable {
@@ -252,16 +264,18 @@ $table-scrollbar: 6px;
       @include flex(flex-start, center, $space-16);
       min-width: 0;
       padding: 0 $space-16;
-      font-size: $text-12;
+      font-size: $text-13;
       line-height: $leading-xs;
       color: $fg-heading;
       overflow-wrap: anywhere;
 
       &--head {
-        height: 3rem;
+        height: 2.75rem;
         padding: $space-8 $space-16;
-        font-weight: $weight-semibold;
-        color: $fg-body;
+        font-size: $text-11;
+        font-weight: $weight-bold;
+        letter-spacing: 0.06em;
+        color: $cold-350;
         text-transform: uppercase;
       }
 
@@ -333,7 +347,7 @@ $table-scrollbar: 6px;
       @include flex(space-between, center, $space-16);
       flex-shrink: 0;
       padding: $space-8 $space-16;
-      background: $cold-50;
+      background: $surface-default;
       border-top: 1px solid $border-default;
     }
   }

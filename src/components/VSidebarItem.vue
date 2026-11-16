@@ -44,7 +44,7 @@ const emit = defineEmits(["click"]);
       width: 100%;
       aspect-ratio: 1;
       padding: $space-4;
-      color: alpha($white, 0.62);
+      color: $fg-body;
       background: transparent;
       border: none;
       border-radius: $radius-lg;
@@ -52,16 +52,16 @@ const emit = defineEmits(["click"]);
       transition: $transition;
 
       &:hover {
-        color: $white;
-        background: $alpha-white;
+        color: $fg-heading;
+        background: $alpha-primary-10;
       }
 
       &:active {
-        background: alpha($white, 0.16);
+        background: $alpha-primary-20;
       }
 
       &:focus-visible {
-        outline: 1px solid $white;
+        outline: 1px solid $border-action-focused;
         outline-offset: -1px;
       }
     }
@@ -79,8 +79,8 @@ const emit = defineEmits(["click"]);
     }
 
     &.is-open &__button {
-      color: $white;
-      background: $alpha-white;
+      color: $fg-action;
+      background: $alpha-primary-10;
     }
 
     // aktivna grupa: boja akcenta + tanka linija lijevo

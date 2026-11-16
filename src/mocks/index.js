@@ -27,10 +27,11 @@ import { useAuthStore } from "@/stores/auth";
 import router from "@/router";
 import { START_LOCATION } from "vue-router";
 import { API_BASE_URL, APP_NAME } from "@/config";
+import company_logo from "@/assets/images/company/codebron.png";
 
 const API_URL = API_BASE_URL;
 const DELAY_MS = 300;
-// prijavljeni korisnik je uvek Milan Stevanović (CompanyAdmin)
+// prijavljeni korisnik je uvek Anja Obradović (CompanyAdmin)
 const ME = 1;
 
 const APPROVAL_PERMISSIONS = ["REQUEST.APPROVE.TEAM", "REQUEST.APPROVE.ALL"];
@@ -49,10 +50,14 @@ const db = {
   ad: createAdSettings(),
   company: {
     id: 1,
-    name: "NovaTech d.o.o.",
+    name: "Codebron d.o.o.",
+    // slika 1680x720, logo je u dijelu logo_crop
+    logo_url: company_logo,
+    logo_size: [1680, 720],
+    logo_crop: "120 190 1425 300",
     tax_id: "108123456",
-    address: "Bulevar oslobodjenja 10, 21000 Novi Sad",
-    contact: "office@novatech.rs",
+    address: "Bulevar oslobođenja 10, 21000 Novi Sad",
+    contact: "office@codebron.rs",
     two_factor_required: true,
     custom_approval_chains_enabled: false,
     team_calendar_visible_to_employees: true,
