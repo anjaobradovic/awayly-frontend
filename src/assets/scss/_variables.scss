@@ -127,10 +127,11 @@ $surface-disabled: $true-700;
 $surface-action: $primary-500; // filled dugme
 $surface-action-hover: $primary-400;
 $surface-action-pressed: $primary-700;
-$surface-success: $success-950;
-$surface-error: $error-950;
-$surface-information: $information-950;
-$surface-warning: $warning-950;
+// blaga podloga statusa, radi u obje teme
+$surface-success: alpha($success-500, 0.12);
+$surface-error: alpha($error-500, 0.12);
+$surface-information: alpha($information-500, 0.12);
+$surface-warning: alpha($warning-500, 0.14);
 $surface-table-head: $cold-50;
 $surface-table-body-odd: $true-800;
 $surface-table-body-even: $true-850;

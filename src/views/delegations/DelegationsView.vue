@@ -15,18 +15,6 @@
             {{ $t("delegations.settings_button") }}
           </VBaseButton>
 
-          <!-- uključi/isključi: samo moje delegacije (getMyDelegations) -->
-          <VBaseButton
-            :class="['delegations__mine', { 'is-active': delegations_store.show_mine }]"
-            appearance="outlined"
-            size="header"
-            :aria-pressed="delegations_store.show_mine"
-            @click="delegations_store.toggleMine()"
-          >
-            <VIcon name="person" :size="16" filled />
-            {{ $t("delegations.mine") }}
-          </VBaseButton>
-
           <VBaseInput
             v-model="search"
             class="delegations__search"
@@ -72,76 +60,121 @@
       </VPageHeader>
     </div>
 
-    <VTable
-      v-model:sort="sort"
-      class="delegations__table"
-      :columns="columns"
-      :rows="delegations_store.paginated_items"
-      :empty-text="empty_text"
-      clickable
-      @row-click="editDelegation"
-    >
-      <template #cell-delegated_to="{ value }">
-        <span class="delegations__name">{{ script(value) }}</span>
-      </template>
+    <!-- sve (getAllDelegations) ili samo moje (getMyDelegations) -->
+    <VTabs v-model="scope" :tabs="tabs" />
 
-      <template #cell-delegated_by="{ value }">
-        <span class="delegations__name">{{ script(value) }}</span>
-      </template>
+    <div class="delegations__body">
+      <div class="delegations__inner">
+        <!-- prvo učitavanje: kostur -->
+        <div v-if="is_initial_loading" class="delegations__skeleton" aria-hidden="true">
+          <span v-for="index in 4" :key="`s${index}`" class="delegations__skeleton-stat" />
+          <span class="delegations__skeleton-hero" />
+          <span v-for="index in 3" :key="`c${index}`" class="delegations__skeleton-card" />
+        </div>
+        <p v-if="is_initial_loading" class="visually-hidden">{{ $t("common.states.loading") }}</p>
 
-      <!-- kolona je sortirana po start_date, a prikazuje ceo period -->
-      <template #cell-start_date="{ row }">
-        {{ formatDate(row.start_date, { dateOnly: true }) }} -
-        {{ formatDate(row.end_date, { dateOnly: true }) }}
-      </template>
-
-      <template #cell-is_active="{ value }">
-        <VChip
-          :tone="value ? 'active' : 'inactive'"
-          :icon="value ? 'check_circle' : 'remove_circle'"
+        <div
+          v-else-if="delegations_store.error && !delegations_store.is_loaded"
+          class="delegations__state is-error"
         >
-          {{ $t(value ? "delegations.status.active" : "delegations.status.inactive") }}
-        </VChip>
-      </template>
+          <span class="delegations__state-icon">
+            <VIcon name="error_outline" :size="28" />
+          </span>
+          <p class="delegations__state-title">{{ error_text }}</p>
+          <VBaseButton
+            appearance="outlined"
+            size="small"
+            @click="delegations_store.fetchDelegations()"
+          >
+            {{ $t("common.actions.retry") }}
+          </VBaseButton>
+        </div>
 
-      <template #cell-created_at="{ value }">
-        {{ formatDateTime(value) }}
-      </template>
+        <template v-else>
+          <!-- brojke za cijeli spisak, bez obzira na pretragu i filter -->
+          <dl class="delegations__stats" :aria-label="$t('delegations.summary.label')">
+            <div
+              v-for="stat in stats"
+              :key="stat.key"
+              :class="['delegations__stat', `is-${stat.key}`]"
+            >
+              <dt>
+                <VIcon :name="stat.icon" :size="16" />
+                {{ stat.label }}
+              </dt>
+              <dd>{{ stat.value }}</dd>
+            </div>
+          </dl>
 
-      <template #cell-updated_at="{ value }">
-        {{ value ? formatDateTime(value) : "–" }}
-      </template>
-
-      <template #actions="{ row }">
-        <VDropdown :label="$t('delegations.actions_for', { name: row.delegated_by })">
-          <VMenu>
-            <VMenuItem
-              :label="$t(row.is_active ? 'common.actions.edit' : 'common.actions.details')"
-              @click="editDelegation(row)"
+          <div v-if="delegations_store.my_active_items.length" class="delegations__heroes">
+            <DelegationActiveCard
+              v-for="item in delegations_store.my_active_items"
+              :key="item.id"
+              :delegation="item"
+              :current-user-id="delegations_store.current_user_id"
+              @edit="editDelegation"
+              @deactivate="deactivateDelegation"
             />
-            <!-- API zna samo za otkazivanje, pa se nudi samo za aktivne -->
-            <VMenuItem
-              v-if="row.is_active"
-              :label="$t('delegations.deactivate')"
-              @click="deactivateDelegation(row)"
-            />
-          </VMenu>
-        </VDropdown>
-      </template>
+          </div>
 
-      <template #footer>
-        <p class="delegations__count">
-          <strong>{{ delegations_store.paginated_items.length }}</strong>
-          {{
-            $t("delegations.count", {
-              count: delegations_store.total_items,
-              total: delegations_store.total_items
-            })
-          }}
-        </p>
-        <VPagination v-model="page" :total-pages="delegations_store.total_pages" />
-      </template>
-    </VTable>
+          <p v-if="delegations_store.error" class="delegations__inline-error" role="alert">
+            {{ error_text }}
+          </p>
+
+          <div v-if="!delegations_store.grouped_items.length" class="delegations__state">
+            <span class="delegations__state-icon">
+              <VIcon :name="is_filtered ? 'search_off' : 'supervisor_account'" :size="28" />
+            </span>
+            <p class="delegations__state-title">
+              {{ $t(is_filtered ? "delegations.empty_filtered" : "delegations.empty") }}
+            </p>
+            <p class="delegations__state-hint">
+              {{ $t(is_filtered ? "delegations.empty_filtered_hint" : "delegations.empty_hint") }}
+            </p>
+            <VBaseButton v-if="is_filtered" appearance="outlined" size="small" @click="clearAll">
+              {{ $t("delegations.clear_filters") }}
+            </VBaseButton>
+            <VBaseButton v-else size="small" @click="addDelegation">
+              <VIcon name="add" :size="16" />
+              {{ $t("delegations.add") }}
+            </VBaseButton>
+          </div>
+
+          <ol
+            v-else
+            :class="['delegations__groups', { 'is-refreshing': delegations_store.is_loading }]"
+            :aria-label="$t('delegations.list_label')"
+            :aria-busy="delegations_store.is_loading"
+          >
+            <li
+              v-for="group in delegations_store.grouped_items"
+              :key="group.key"
+              :class="['delegations__group', `is-${group.key}`]"
+            >
+              <h3 class="delegations__group-header">
+                <span class="delegations__group-title">
+                  {{ $t(`delegations.groups.${group.key}`) }}
+                </span>
+                <span class="delegations__group-count">
+                  {{ $t("delegations.count", { count: group.items.length }) }}
+                </span>
+              </h3>
+
+              <ul class="delegations__grid">
+                <li v-for="item in group.items" :key="item.id">
+                  <DelegationCard
+                    :delegation="item"
+                    :current-user-id="delegations_store.current_user_id"
+                    @edit="editDelegation"
+                    @deactivate="deactivateDelegation"
+                  />
+                </li>
+              </ul>
+            </li>
+          </ol>
+        </template>
+      </div>
+    </div>
 
     <DelegationAddDrawer v-model:open="is_add_open" />
     <DelegationSettingsDrawer v-model:open="is_settings_open" />
@@ -159,53 +192,47 @@ import VPageHeader from "@/components/VPageHeader.vue";
 import VBaseButton from "@/components/VBaseButton.vue";
 import VBaseInput from "@/components/VBaseInput.vue";
 import VIcon from "@/components/VIcon.vue";
-import VTable from "@/components/VTable.vue";
-import VChip from "@/components/VChip.vue";
-import VDropdown from "@/components/VDropdown.vue";
-import VMenu from "@/components/VMenu.vue";
-import VMenuItem from "@/components/VMenuItem.vue";
-import VPagination from "@/components/VPagination.vue";
+import VTabs from "@/components/VTabs.vue";
 import VFilterPopup from "@/components/VFilterPopup.vue";
 import VSelect from "@/components/VSelect.vue";
 import DelegationAddDrawer from "./components/DelegationAddDrawer.vue";
 import DelegationSettingsDrawer from "./components/DelegationSettingsDrawer.vue";
 import DelegationEditDrawer from "./components/DelegationEditDrawer.vue";
 import DelegationDeactivateDialog from "./components/DelegationDeactivateDialog.vue";
-import { useDelegationsStore } from "@/stores/delegations";
-import { useDate } from "@/composables/useDate";
+import DelegationActiveCard from "./components/DelegationActiveCard.vue";
+import DelegationCard from "./components/DelegationCard.vue";
+import { DELEGATION_STATES, useDelegationsStore } from "@/stores/delegations";
 import { getErrorMessage } from "@/utils/api-error";
-import { script, t } from "@/i18n";
-
-// širine kolona, label je ključ prevoda
-const COLUMNS = [
-  {
-    key: "delegated_to",
-    label: "delegations.columns.delegated_to",
-    width: "260px",
-    sortable: true
-  },
-  {
-    key: "delegated_by",
-    label: "delegations.columns.delegated_by",
-    width: "260px",
-    sortable: true
-  },
-  { key: "start_date", label: "delegations.columns.period", width: "260px", sortable: true },
-  { key: "is_active", label: "delegations.columns.status", width: "200px", sortable: true },
-  { key: "created_at", label: "delegations.columns.created_at", width: "220px", sortable: true },
-  { key: "updated_at", label: "delegations.columns.updated_at", sortable: true }
-];
-
-const columns = computed(() => COLUMNS.map((column) => ({ ...column, label: t(column.label) })));
-
-// vrijednosti idu direktno u ?status=
-const status_options = computed(() => [
-  { value: "ACTIVE", label: t("delegations.status.active") },
-  { value: "CANCELLED", label: t("delegations.status.inactive") }
-]);
+import { t } from "@/i18n";
 
 const delegations_store = useDelegationsStore();
-const { formatDate } = useDate();
+
+const tabs = computed(() => [
+  { value: "all", label: t("delegations.tabs.all") },
+  { value: "mine", label: t("delegations.tabs.mine") }
+]);
+
+const scope = computed({
+  get: () => (delegations_store.show_mine ? "mine" : "all"),
+  set: (value) => delegations_store.setMine(value === "mine")
+});
+
+// stanje se računa iz statusa i perioda, filter je na klijentu
+const status_options = computed(() =>
+  DELEGATION_STATES.map((value) => ({ value, label: t(`delegations.status.${value}`) }))
+);
+
+const stats = computed(() => {
+  const counts = delegations_store.state_counts;
+
+  return [
+    { key: "total", icon: "supervisor_account", value: counts.total },
+    { key: "active", icon: "check_circle", value: counts.active },
+    { key: "scheduled", icon: "event", value: counts.scheduled },
+    { key: "ended", icon: "history", value: counts.ended }
+  ].map((stat) => ({ ...stat, label: t(`delegations.summary.${stat.key}`) }));
+});
+
 const is_filter_open = ref(false);
 const draft_filters = ref({ ...delegations_store.filters });
 
@@ -217,9 +244,16 @@ function applyFilters() {
   delegations_store.setFilters(draft_filters.value);
   is_filter_open.value = false;
 }
+
 function clearFilters() {
   delegations_store.clearFilters();
   is_filter_open.value = false;
+}
+
+// prazno stanje: briše i pretragu i filter
+function clearAll() {
+  delegations_store.setSearch("");
+  clearFilters();
 }
 
 const search = computed({
@@ -227,17 +261,17 @@ const search = computed({
   set: (value) => delegations_store.setSearch(value)
 });
 
-const sort = computed({
-  get: () => delegations_store.sort,
-  set: (value) => delegations_store.setSort(value)
-});
+const is_filtered = computed(
+  () => !!delegations_store.search.trim() || delegations_store.has_filters
+);
 
-const page = computed({
-  get: () => delegations_store.page,
-  set: (value) => (delegations_store.page = value)
-});
+const is_initial_loading = computed(
+  () => delegations_store.is_loading && !delegations_store.is_loaded
+);
 
-const formatDateTime = (value) => formatDate(value).replace(" ", " - ");
+const error_text = computed(() =>
+  getErrorMessage(delegations_store.error, t("common.states.error"))
+);
 
 // bočni paneli, otvaraju se kad su true
 const is_add_open = ref(false);
@@ -251,7 +285,7 @@ function openSettings() {
   is_settings_open.value = true;
 }
 
-// panel delegacije i dijalog za deaktivaciju rade nad istim redom
+// panel delegacije i dijalog za deaktivaciju rade nad istom karticom
 const selected_delegation = ref(null);
 const is_edit_open = ref(false);
 const is_deactivate_open = ref(false);
@@ -267,68 +301,321 @@ function deactivateDelegation(delegation) {
   is_deactivate_open.value = true;
 }
 
-const empty_text = computed(() => {
-  if (delegations_store.is_loading) return t("common.states.loading");
-  if (delegations_store.error) {
-    return getErrorMessage(delegations_store.error, t("common.states.error"));
-  }
-
-  return t("delegations.empty");
-});
-
 // na ulasku samo getAllDelegations, zaposlene učitava panel
 onMounted(() => delegations_store.fetchDelegations());
 </script>
 
 <style lang="scss" scoped>
 .delegations {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
-  // siva pozadina strane, tabela je bijela kutija
-  background: $cold-50;
+  --page-bg: #{$cold-50};
 
-  // header je nastavak navbara, relative bez z-index da prekrije senku navbara
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  background: var(--page-bg);
+
+  // header je nastavak navbara
   &__header {
     position: relative;
+    z-index: 3;
     padding: $space-12 $space-16;
     background: $surface-default;
     box-shadow: $shadow-header;
   }
+
   &__search {
-    width: 20.125rem;
+    width: 18rem;
   }
+
   &__filters.v-btn {
     color: $fg-action;
   }
 
-  // uključen "Moje delegacije" izgleda kao aktivan filter
-  &__mine.v-btn.is-active {
-    color: $fg-action;
-    background: $alpha-primary-5;
-    border-color: $border-action;
-  }
-  &__table {
+  &__body {
     min-height: 0;
-    margin: $space-16;
-    border: 1px solid $border-default;
-    border-radius: $radius-xs;
-    // senka oko tabele
-    box-shadow: $shadow-small;
+    overflow-y: auto;
   }
-  &__name {
-    @include truncate;
-    font-weight: $weight-semibold;
-  }
-  &__count {
-    font-size: $text-12;
-    line-height: $leading-xs;
-    color: $fg-heading;
 
-    strong {
-      font-weight: $weight-semibold;
-      color: $fg-action;
+  &__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: $space-16;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: $space-16 $space-24 $space-32;
+  }
+
+  // traka sa brojkama
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: $space-10;
+    margin: 0;
+  }
+
+  &__stat {
+    --state: #{$cold-550};
+
+    @include flex(space-between, flex-start, $space-6, column);
+    position: relative;
+    padding: $space-12 $space-16 $space-12 $space-20;
+    background: $surface-default;
+    border: 1px solid $border-default;
+    border-radius: $radius-lg;
+
+    // crtica u boji statusa
+    &::before {
+      content: "";
+      position: absolute;
+      top: $space-14;
+      bottom: $space-14;
+      left: $space-8;
+      width: 3px;
+      background: var(--state);
+      border-radius: $radius-pill;
     }
+
+    &.is-active {
+      --state: #{$success-500};
+    }
+
+    &.is-scheduled {
+      --state: #{$information-500};
+    }
+
+    &.is-ended {
+      --state: #{$cold-300};
+    }
+
+    dt {
+      @include flex(flex-start, center, $space-6);
+      font-size: $text-12;
+      font-weight: $weight-semibold;
+      color: $fg-body;
+
+      :deep(.v-icon) {
+        color: var(--state);
+      }
+    }
+
+    &.is-ended dt :deep(.v-icon) {
+      color: $icon-default;
+    }
+
+    dd {
+      margin: 0;
+      font-size: $text-26;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: $fg-heading;
+    }
+  }
+
+  &__heroes {
+    display: grid;
+    gap: $space-12;
+  }
+
+  &__inline-error {
+    font-size: $text-12;
+    color: $fg-error;
+  }
+
+  &__groups {
+    display: grid;
+    gap: $space-8;
+    list-style: none;
+    transition: opacity 0.2s ease;
+
+    &.is-refreshing {
+      opacity: 0.55;
+    }
+  }
+
+  // zaglavlje grupe se lijepi dok se skroluje
+  &__group-header {
+    @include flex(flex-start, center, $space-8);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 (-$space-4);
+    padding: $space-8 $space-4;
+    font-size: $text-13;
+    background: var(--page-bg);
+
+    &::before {
+      content: "";
+      width: 0.5rem;
+      height: 0.5rem;
+      background: var(--state, #{$cold-300});
+      border-radius: 50%;
+    }
+
+    // linija do kraja reda poslije brojača
+    &::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: $border-default;
+    }
+  }
+
+  &__group.is-active {
+    --state: #{$success-500};
+  }
+
+  &__group.is-scheduled {
+    --state: #{$information-500};
+  }
+
+  &__group-title {
+    font-weight: $weight-bold;
+    color: $fg-heading;
+  }
+
+  &__group-count {
+    padding: $space-2 $space-8;
+    font-size: $text-11;
+    font-weight: $weight-semibold;
+    line-height: $leading-xxs;
+    color: $fg-body;
+    background: $surface-default;
+    border: 1px solid $border-default;
+    border-radius: $radius-pill;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+    gap: $space-10;
+    padding-bottom: $space-8;
+    list-style: none;
+  }
+
+  // prazno stanje i greška
+  &__state {
+    @include flex(center, center, $space-8, column);
+    padding: $space-40 $space-24;
+    text-align: center;
+    background: $surface-default;
+    border: 1px dashed $border-default;
+    border-radius: $radius-xl;
+
+    .v-btn {
+      margin-top: $space-8;
+    }
+  }
+
+  &__state-icon {
+    @include flex(center, center);
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: $space-4;
+    color: $primary-500;
+    background: $alpha-primary-10;
+    border-radius: 50%;
+  }
+
+  &__state.is-error &__state-icon {
+    color: $error-500;
+    background: $alpha-red;
+  }
+
+  &__state-title {
+    font-size: $text-14;
+    font-weight: $weight-bold;
+    color: $fg-heading;
+  }
+
+  &__state-hint {
+    max-width: 24rem;
+    font-size: $text-13;
+    color: $fg-body;
+  }
+
+  // kostur
+  &__skeleton {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: $space-10;
+  }
+
+  &__skeleton-stat,
+  &__skeleton-hero,
+  &__skeleton-card {
+    background: $surface-default;
+    border: 1px solid $border-default;
+    border-radius: $radius-lg;
+    animation: delegations-pulse 1.2s ease-in-out infinite;
+  }
+
+  &__skeleton-stat {
+    height: 4.75rem;
+  }
+
+  &__skeleton-hero {
+    grid-column: 1 / -1;
+    height: 10rem;
+    margin: $space-6 0;
+    border-radius: $radius-xl;
+  }
+
+  &__skeleton-card {
+    grid-column: span 2;
+    height: 9rem;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @include respond-to("tablet-sm") {
+    &__header {
+      padding: $space-8;
+    }
+
+    &__search {
+      flex: 1 1 12rem;
+      width: auto;
+      min-width: 0;
+    }
+
+    &__inner {
+      padding: $space-12 $space-12 $space-24;
+    }
+
+    &__stats,
+    &__skeleton {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @include respond-to("mobile") {
+    &__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+@keyframes delegations-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delegations__skeleton-stat,
+  .delegations__skeleton-hero,
+  .delegations__skeleton-card {
+    animation: none;
   }
 }
 </style>

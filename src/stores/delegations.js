@@ -6,8 +6,6 @@ import { toApiDate } from "@/utils/api-date";
 import { countFilters } from "@/utils/filter-count";
 import { intlLocale } from "@/i18n";
 
-const compareValues = (a, b) => String(a ?? "").localeCompare(String(b ?? ""), intlLocale());
-
 const createDefaultFilters = () => ({ status: null });
 
 // trajna rezerva i delegacija prije odsustva
@@ -39,6 +37,36 @@ const APPROVAL_PERMISSIONS = ["REQUEST.APPROVE.TEAM", "REQUEST.APPROVE.ALL"];
 
 const toDateValue = (value) => (value ? String(value).slice(0, 10) : "");
 
+// datumi stižu kao ponoć UTC, računamo u kalendarskim danima
+const DAY_MS = 86400000;
+const dayNumber = (value) => {
+  const [year, month, day] = toDateValue(value).split("-").map(Number);
+  return Date.UTC(year, month - 1, day) / DAY_MS;
+};
+const todayNumber = () => {
+  const now = new Date();
+  return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / DAY_MS;
+};
+
+// stanje za prikaz: aktivna sada, zakazana, istekla ili deaktivirana
+export const DELEGATION_STATES = ["active", "scheduled", "expired", "deactivated"];
+
+// grupe na stranici, istekle i deaktivirane idu zajedno
+export const DELEGATION_GROUPS = [
+  { key: "active", states: ["active"] },
+  { key: "scheduled", states: ["scheduled"] },
+  { key: "ended", states: ["expired", "deactivated"] }
+];
+
+const stateOf = (status, start, end, today) => {
+  if (status !== "ACTIVE") return "deactivated";
+  if (today < start) return "scheduled";
+  if (today > end) return "expired";
+  return "active";
+};
+
+const byName = (a, b) => a.localeCompare(b, intlLocale());
+
 export const useDelegationsStore = defineStore("delegations", {
   state: () => ({
     delegations: [],
@@ -49,14 +77,13 @@ export const useDelegationsStore = defineStore("delegations", {
     active_delegation_id: null,
     can_manage_others: false,
     is_loading: false,
+    // prvo učitavanje gotovo, kasnije se lista samo osvježava
+    is_loaded: false,
     error: null,
     search: "",
     // Moje delegacije
     show_mine: false,
-    filters: createDefaultFilters(),
-    sort: null,
-    page: 1,
-    per_page: 10
+    filters: createDefaultFilters()
   }),
 
   getters: {
@@ -66,29 +93,84 @@ export const useDelegationsStore = defineStore("delegations", {
       const names = new Map(state.employees.map((employee) => [employee.id, employee.name]));
       const nameOf = (name, id) => name ?? names.get(id) ?? `#${id}`;
 
-      return state.delegations.map((delegation) => ({
-        id: delegation.id,
-        delegator_id: delegation.delegator_id,
-        delegate_id: delegation.delegate_id,
-        delegated_by: nameOf(delegation.delegator_name, delegation.delegator_id),
-        delegated_to: nameOf(delegation.delegate_name, delegation.delegate_id),
-        start_date: delegation.start_date,
-        end_date: delegation.end_date,
-        is_active: delegation.status === "ACTIVE",
-        created_at: delegation.created_at,
-        updated_at: delegation.updated_at === delegation.created_at ? null : delegation.updated_at
-      }));
+      const today = todayNumber();
+
+      return state.delegations.map((delegation) => {
+        const start = dayNumber(delegation.start_date);
+        const end = dayNumber(delegation.end_date);
+        const total_days = Math.max(1, end - start + 1);
+        const elapsed_days = Math.min(total_days, Math.max(0, today - start + 1));
+
+        return {
+          id: delegation.id,
+          delegator_id: delegation.delegator_id,
+          delegate_id: delegation.delegate_id,
+          delegated_by: nameOf(delegation.delegator_name, delegation.delegator_id),
+          delegated_to: nameOf(delegation.delegate_name, delegation.delegate_id),
+          start_date: delegation.start_date,
+          end_date: delegation.end_date,
+          is_active: delegation.status === "ACTIVE",
+          created_at: delegation.created_at,
+          updated_at:
+            delegation.updated_at === delegation.created_at ? null : delegation.updated_at,
+          state: stateOf(delegation.status, start, end, today),
+          total_days,
+          elapsed_days,
+          // do kraja (0 = završava danas) i do početka za zakazane
+          days_left: end - today,
+          days_until: start - today,
+          days_since_end: today - end
+        };
+      });
     },
 
     filtered_items() {
       const query = this.search.trim().toLowerCase();
+      const status = this.filters.status;
 
       return this.items.filter(
         (item) =>
-          !query ||
-          item.delegated_to.toLowerCase().includes(query) ||
-          item.delegated_by.toLowerCase().includes(query)
+          (!status || item.state === status) &&
+          (!query ||
+            item.delegated_to.toLowerCase().includes(query) ||
+            item.delegated_by.toLowerCase().includes(query))
       );
+    },
+
+    // brojke za traku na vrhu, bez obzira na pretragu i filter
+    state_counts() {
+      const counts = Object.fromEntries(DELEGATION_STATES.map((key) => [key, 0]));
+
+      for (const item of this.items) counts[item.state] += 1;
+
+      return { ...counts, ended: counts.expired + counts.deactivated, total: this.items.length };
+    },
+
+    // aktivne sada gdje je trenutni korisnik delegator ili zamjenik
+    my_active_items() {
+      const me = this.current_user_id;
+
+      return this.items
+        .filter(
+          (item) => item.state === "active" && (item.delegator_id === me || item.delegate_id === me)
+        )
+        .sort((a, b) => a.days_left - b.days_left);
+    },
+
+    // aktivne: najprije one koje ističu, zakazane: najbliže prve, završene: najnovije prve
+    grouped_items() {
+      const order = {
+        active: (a, b) => a.days_left - b.days_left,
+        scheduled: (a, b) => a.days_until - b.days_until,
+        ended: (a, b) => b.end_date.localeCompare(a.end_date)
+      };
+
+      return DELEGATION_GROUPS.map((group) => ({
+        key: group.key,
+        items: this.filtered_items
+          .filter((item) => group.states.includes(item.state))
+          .sort((a, b) => order[group.key](a, b) || byName(a.delegated_by, b.delegated_by))
+      })).filter((group) => group.items.length);
     },
 
     employee_options: (state) =>
@@ -108,29 +190,7 @@ export const useDelegationsStore = defineStore("delegations", {
 
     has_filters: (state) => Object.values(state.filters).some((value) => value !== null),
 
-    filter_count: (state) => countFilters(state.filters),
-
-    sorted_items() {
-      if (!this.sort) return this.filtered_items;
-
-      const { key, direction } = this.sort;
-      const factor = direction === "asc" ? 1 : -1;
-
-      return [...this.filtered_items].sort((a, b) => compareValues(a[key], b[key]) * factor);
-    },
-
-    total_items() {
-      return this.sorted_items.length;
-    },
-
-    total_pages() {
-      return Math.max(1, Math.ceil(this.total_items / this.per_page));
-    },
-
-    paginated_items() {
-      const start = (this.page - 1) * this.per_page;
-      return this.sorted_items.slice(start, start + this.per_page);
-    }
+    filter_count: (state) => countFilters(state.filters)
   },
 
   actions: {
@@ -139,14 +199,12 @@ export const useDelegationsStore = defineStore("delegations", {
       this.error = null;
 
       try {
-        // oba endpointa primaju ?status=ACTIVE|CANCELLED
-        const filters = { status: { value: this.filters.status } };
-
         // api: 14.2 getMyDelegations ili 14.6 getAllDelegations (MANAGE.OTHERS)
         const endpoint = this.show_mine
           ? "delegation/getMyDelegations"
           : "delegation/getAllDelegations";
-        const result = await fetchAllPages(endpoint, "items", filters);
+        // filter statusa je na klijentu (aktivna/zakazana/istekla/deaktivirana), pa se učitava sve
+        const result = await fetchAllPages(endpoint, "items");
 
         if (!this.show_mine) this.can_manage_others = !result.error;
 
@@ -156,6 +214,7 @@ export const useDelegationsStore = defineStore("delegations", {
         }
 
         this.delegations = result.items.map(toDelegation);
+        this.is_loaded = true;
       } finally {
         this.is_loading = false;
       }
@@ -219,8 +278,6 @@ export const useDelegationsStore = defineStore("delegations", {
       if (result.error) return result.error;
 
       await this.fetchDelegations();
-
-      this.page = 1;
     },
 
     async updateDelegation(item, { delegate_id, start_date, end_date }) {
@@ -358,31 +415,22 @@ export const useDelegationsStore = defineStore("delegations", {
 
     setSearch(value) {
       this.search = value;
-      this.page = 1;
     },
 
-    // filteri idu na backend, pa svaka promjena ponovo učitava spisak
+    // filter je na klijentu, ne treba novo učitavanje
     setFilters(filters) {
       this.filters = { ...this.filters, ...filters };
-      this.page = 1;
-      return this.fetchDelegations();
     },
 
     clearFilters() {
       this.filters = createDefaultFilters();
-      this.page = 1;
-      return this.fetchDelegations();
     },
 
-    toggleMine() {
-      this.show_mine = !this.show_mine;
-      this.page = 1;
-      return this.fetchDelegations();
-    },
+    setMine(value) {
+      if (this.show_mine === value) return;
 
-    setSort(sort) {
-      this.sort = sort;
-      this.page = 1;
+      this.show_mine = value;
+      return this.fetchDelegations();
     }
   }
 });

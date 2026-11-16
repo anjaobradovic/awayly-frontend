@@ -479,7 +479,7 @@ onUnmounted(() => holidays_store.resetStore());
     }
 
     &__search {
-      flex: 1;
+      flex: 1 1 12rem;
       width: auto;
       min-width: 0;
     }

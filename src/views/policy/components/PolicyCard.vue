@@ -1,63 +1,54 @@
 <template>
-  <article class="policy-card">
-    <header class="policy-card__header">
-      <!-- pločica ikone uzima boju kolone (--policy-accent iz PolicyGroup) -->
-      <span class="policy-card__icon" aria-hidden="true">
-        <VIcon :name="icon" :size="20" />
-      </span>
-      <h3 class="policy-card__title">{{ title }}</h3>
-    </header>
+  <!-- grupa povezanih redova unutar odeljka, sa malim podnaslovom -->
+  <div class="policy-card">
+    <h3 v-if="title" class="policy-card__title">
+      <VIcon v-if="icon" :name="icon" :size="16" />
+      {{ title }}
+    </h3>
 
-    <div class="policy-card__fields">
+    <div class="policy-card__rows">
       <slot />
     </div>
-  </article>
+  </div>
 </template>
 
 <script setup>
 import VIcon from "@/components/VIcon.vue";
 
 defineProps({
-  title: { type: String, required: true },
+  // bez naslova grupa je samo okvir oko redova
+  title: { type: String, default: "" },
   // ime Material ikone, npr. beach_access
-  icon: { type: String, required: true }
+  icon: { type: String, default: "" }
 });
 </script>
 
 <style scoped lang="scss">
 .policy-card {
-  @include flex(flex-start, stretch, $space-16, column);
-  flex-shrink: 0;
-  padding: $space-12;
-  background: $surface-default;
-  border: 1px solid $border-default;
-  border-radius: $radius-xs;
-  box-shadow:
-    0 2px 5px rgba($black, 0.1),
-    0 1px 0.5px rgba($black, 0.05);
-
-  &__header {
-    @include flex(flex-start, center, $space-10);
-  }
-
-  &__icon {
-    @include flex(center, center);
-    flex-shrink: 0;
-    padding: $space-4;
-    color: $fg-on-action;
-    background: var(--policy-accent);
-    border-radius: $radius-sm;
-  }
+  @include flex(flex-start, stretch, $space-8, column);
+  min-width: 0;
 
   &__title {
-    font-size: $text-14;
-    font-weight: $weight-regular;
-    line-height: $leading-18;
-    color: $fg-heading;
+    @include flex(flex-start, center, $space-6);
+    padding: 0 $space-4;
+    font-size: $text-11;
+    font-weight: $weight-bold;
+    line-height: $leading-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $fg-muted;
+
+    :deep(.v-icon),
+    i {
+      color: var(--section-accent);
+    }
   }
 
-  &__fields {
-    @include flex(flex-start, stretch, $space-16, column);
+  // redovi su u okviru sa linijama između (bez overflow, da kalendar ne bude odsečen)
+  &__rows {
+    background: $surface-default;
+    border: 1px solid $border-default;
+    border-radius: $radius-lg;
   }
 }
 </style>

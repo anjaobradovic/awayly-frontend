@@ -5,27 +5,63 @@ export default {
     description: "Pregled i podešavanje delegacija i ovlašćenja.",
     add: "Dodaj delegaciju",
     settings_button: "Podešavanje delegiranja",
-    mine: "Moje delegacije",
     search_placeholder: "Pretraži delegacije",
     filter_title: "Filter delegacija",
     status_label: "Status",
     status_placeholder: "Odaberite status delegacije",
+    tabs: {
+      all: "Sve delegacije",
+      mine: "Moje delegacije"
+    },
     status: {
       active: "Aktivna",
-      inactive: "Neaktivna"
+      scheduled: "Zakazana",
+      expired: "Istekla",
+      deactivated: "Deaktivirana"
     },
-    columns: {
-      delegated_to: "Delegirano za",
-      delegated_by: "Delegirano od",
-      period: "Delegacija aktivna",
-      status: "Status",
-      created_at: "Kreirano",
-      updated_at: "Izmenjeno"
+    groups: {
+      active: "Aktivne",
+      scheduled: "Zakazane",
+      ended: "Istekle i deaktivirane"
+    },
+    summary: {
+      label: "Pregled delegacija",
+      total: "Ukupno",
+      active: "Aktivne sada",
+      scheduled: "Zakazane",
+      ended: "Završene"
+    },
+    hero: {
+      eyebrow_outgoing: "Vaša aktivna delegacija",
+      eyebrow_incoming: "Delegirano vama",
+      title_outgoing: "Vaša odobravanja preuzima zamenik",
+      title_incoming: "Odobravate zahteve kao zamena",
+      progress_label: "Proteklo od perioda delegacije",
+      progress: "Dan {day} od {total}"
+    },
+    card: {
+      from: "Delegira",
+      to: "Zamenik",
+      you: "Vi",
+      arrow: "delegira na",
+      open: "Otvori delegaciju: {from} na {to}",
+      scope: "Ovlašćenje",
+      scope_value: "Odobravanje zahteva za odsustvo",
+      days_left: "još {count} dan | još {count} dana | još {count} dana",
+      ends_today: "Završava se danas",
+      starts_in: "počinje za {count} dan | počinje za {count} dana | počinje za {count} dana",
+      ended_ago: "pre {count} dan | pre {count} dana | pre {count} dana",
+      deactivated_on: "{date}"
     },
     actions_for: "Akcije za delegaciju od {name}",
     deactivate: "Deaktiviraj",
-    count: "od {total} delegacije | od {total} delegacije | od {total} delegacija",
-    empty: "Nema delegacija za prikaz.",
+    count: "{count} delegacija | {count} delegacije | {count} delegacija",
+    list_label: "Delegacije po statusu",
+    empty: "Još nema delegacija",
+    empty_hint: "Dodajte delegaciju kako bi zamenik odobravao zahteve dok ste odsutni.",
+    empty_filtered: "Nema delegacija za zadatu pretragu",
+    empty_filtered_hint: "Promenite pretragu ili filter i pokušajte ponovo.",
+    clear_filters: "Očisti pretragu i filter",
     form: {
       delegated_by: "Delegirano od",
       delegated_by_placeholder: "Odaberite zaposlenog za koga se vrši delegacija zahteva",
@@ -60,27 +96,63 @@ export default {
     description: "Review and manage delegations and approval rights.",
     add: "Add delegation",
     settings_button: "Delegation settings",
-    mine: "My delegations",
     search_placeholder: "Search delegations",
     filter_title: "Filter delegations",
     status_label: "Status",
     status_placeholder: "Select a delegation status",
+    tabs: {
+      all: "All delegations",
+      mine: "My delegations"
+    },
     status: {
       active: "Active",
-      inactive: "Inactive"
+      scheduled: "Scheduled",
+      expired: "Expired",
+      deactivated: "Deactivated"
     },
-    columns: {
-      delegated_to: "Delegated to",
-      delegated_by: "Delegated by",
-      period: "Active period",
-      status: "Status",
-      created_at: "Created",
-      updated_at: "Updated"
+    groups: {
+      active: "Active",
+      scheduled: "Scheduled",
+      ended: "Expired and deactivated"
+    },
+    summary: {
+      label: "Delegation overview",
+      total: "Total",
+      active: "Active now",
+      scheduled: "Scheduled",
+      ended: "Ended"
+    },
+    hero: {
+      eyebrow_outgoing: "Your active delegation",
+      eyebrow_incoming: "Delegated to you",
+      title_outgoing: "A stand-in is handling your approvals",
+      title_incoming: "You're approving requests as a stand-in",
+      progress_label: "Share of the delegation period elapsed",
+      progress: "Day {day} of {total}"
+    },
+    card: {
+      from: "Delegator",
+      to: "Stand-in",
+      you: "You",
+      arrow: "delegates to",
+      open: "Open delegation: {from} to {to}",
+      scope: "Permission",
+      scope_value: "Approving leave requests",
+      days_left: "{count} day left | {count} days left",
+      ends_today: "Ends today",
+      starts_in: "starts in {count} day | starts in {count} days",
+      ended_ago: "{count} day ago | {count} days ago",
+      deactivated_on: "{date}"
     },
     actions_for: "Actions for delegation by {name}",
     deactivate: "Deactivate",
-    count: "of {total} delegation | of {total} delegations",
-    empty: "No delegations to show.",
+    count: "{count} delegation | {count} delegations",
+    list_label: "Delegations by status",
+    empty: "No delegations yet",
+    empty_hint: "Add a delegation so a stand-in can approve requests while you're away.",
+    empty_filtered: "No delegations match your search",
+    empty_filtered_hint: "Change the search or filter and try again.",
+    clear_filters: "Clear search and filter",
     form: {
       delegated_by: "Delegated by",
       delegated_by_placeholder: "Select the employee whose approvals are delegated",
