@@ -34,6 +34,15 @@
       <p v-if="message" class="team-dashboard__message">{{ message }}</p>
 
       <template v-else>
+        <DashboardSummary
+          icon="groups"
+          :eyebrow="$t('dashboard.summary.team_eyebrow')"
+          :title="team_name"
+          :people="people"
+          :people-label="$t('dashboard.summary.people')"
+          :stats="stats"
+        />
+
         <TeamHeatmap
           :year="team_store.heatmap.year"
           :days="team_store.absences_by_day"
@@ -45,23 +54,15 @@
         />
 
         <div class="team-dashboard__grid">
-          <div class="team-dashboard__column">
-            <DashboardRequestStats
-              class="team-dashboard__stats"
-              :pending="team_store.requests.pending"
-              :approved="team_store.requests.approved"
-              @details="router.push({ name: 'requests' })"
-            />
-
-            <TeamAbsentList class="team-dashboard__absent" :items="team_store.visible_absent" />
-          </div>
-
           <DashboardMonthlyChart
+            class="team-dashboard__chart"
             :title="$t('dashboard.chart.absence_title')"
             :graphs="team_store.graphs"
           />
 
-          <TeamUtilization :items="team_store.utilization" />
+          <TeamAbsentList class="team-dashboard__absent" :items="team_store.visible_absent" />
+
+          <TeamUtilization class="team-dashboard__utilization" :items="team_store.utilization" />
         </div>
       </template>
     </div>
@@ -83,7 +84,7 @@ import VSelect from "@/components/VSelect.vue";
 import SubmitRequestButton from "@/views/requests/components/SubmitRequestButton.vue";
 import TeamHeatmap from "./components/TeamHeatmap.vue";
 import DayAbsencesDrawer from "./components/DayAbsencesDrawer.vue";
-import DashboardRequestStats from "./components/DashboardRequestStats.vue";
+import DashboardSummary from "./components/DashboardSummary.vue";
 import TeamAbsentList from "./components/TeamAbsentList.vue";
 import DashboardMonthlyChart from "./components/DashboardMonthlyChart.vue";
 import TeamUtilization from "./components/TeamUtilization.vue";
@@ -112,6 +113,55 @@ const message = computed(() => {
   if (!team_store.teams.length) return t("dashboard.no_teams");
   return "";
 });
+
+const team_name = computed(
+  () => team_store.team_options.find((team) => team.value === team_store.team_id)?.label ?? ""
+);
+
+const people = computed(() =>
+  team_store.members.map((member) => ({ id: member.user_id, name: member.name }))
+);
+
+// prosjek iskorišćenog godišnjeg za izabrane ljude
+const utilization_percent = computed(() => {
+  const totals = team_store.utilization.reduce(
+    (sum, item) => ({ used: sum.used + item.used, entitled: sum.entitled + item.entitled }),
+    { used: 0, entitled: 0 }
+  );
+
+  return totals.entitled ? Math.round((totals.used / totals.entitled) * 100) : 0;
+});
+
+const stats = computed(() => [
+  {
+    key: "members",
+    icon: "group",
+    label: t("dashboard.summary.members"),
+    value: team_store.members.length
+  },
+  {
+    key: "absent",
+    icon: "flight_takeoff",
+    label: t("dashboard.summary.absent_today"),
+    value: team_store.visible_absent.length
+  },
+  {
+    key: "pending",
+    icon: "hourglass_top",
+    label: t("dashboard.summary.pending"),
+    value: team_store.requests.pending,
+    tone: "warning",
+    to: { name: "requests" }
+  },
+  {
+    key: "utilization",
+    icon: "beach_access",
+    label: t("dashboard.summary.utilization"),
+    value: utilization_percent.value,
+    suffix: "%",
+    percent: utilization_percent.value
+  }
+]);
 
 const day_open = ref(false);
 const day = ref(todayIso());
@@ -164,24 +214,36 @@ onUnmounted(() => team_store.resetStore());
     @include thin-scrollbar($primary);
   }
 
-  // liste unutar kartica skroluju
+  // grafikon široko, odsutni pored, iskorišćenost ispod preko cijele širine
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: minmax(30.125rem, auto);
+    grid-template-areas:
+      "chart chart absent"
+      "util util util";
     gap: $space-16;
   }
 
-  &__column {
-    display: grid;
-    grid-template-rows: 12.5rem minmax(0, 1fr); // statistika, pa odsutni
-    gap: $space-16;
-    min-width: 0;
-    min-height: 0;
+  &__chart {
+    grid-area: chart;
+    min-height: 22rem;
   }
 
-  &__grid > :not(&__column) {
-    max-height: 30.125rem;
+  &__absent {
+    grid-area: absent;
+    max-height: 26rem;
+  }
+
+  // široka kartica, lista u dvije kolone
+  &__utilization {
+    grid-area: util;
+    max-height: 26rem;
+
+    :deep(.team-utilization__list) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: $space-32;
+    }
   }
 
   &__message {
@@ -193,13 +255,12 @@ onUnmounted(() => team_store.resetStore());
 
   @include respond-to("laptop-sm") {
     &__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "chart" "absent" "util";
     }
 
-    &__column {
-      grid-column: 1 / -1;
-      grid-template-rows: auto;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    &__utilization :deep(.team-utilization__list) {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -215,8 +276,7 @@ onUnmounted(() => team_store.resetStore());
       min-width: 0;
     }
 
-    &__grid,
-    &__column {
+    &__grid {
       grid-template-columns: minmax(0, 1fr);
     }
   }

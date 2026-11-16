@@ -147,8 +147,10 @@ const carryover_notice = computed(() => {
 });
 
 const message = computed(() => {
-  if (dashboard_store.error) return getErrorMessage(dashboard_store.error, t("common.states.error"));
-  if (dashboard_store.is_loading && !dashboard_store.annual.entitled) return t("common.states.loading");
+  if (dashboard_store.error)
+    return getErrorMessage(dashboard_store.error, t("common.states.error"));
+  if (dashboard_store.is_loading && !dashboard_store.annual.entitled)
+    return t("common.states.loading");
   return "";
 });
 

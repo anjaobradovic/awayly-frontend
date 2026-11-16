@@ -23,6 +23,19 @@
       <p v-if="message" class="company-dashboard__message">{{ message }}</p>
 
       <template v-else>
+        <DashboardSummary
+          icon="domain"
+          :eyebrow="
+            company_store.team_id
+              ? $t('dashboard.summary.team_eyebrow')
+              : $t('dashboard.summary.company_eyebrow')
+          "
+          :title="summary_title"
+          :people="summary_people"
+          :people-label="$t('dashboard.summary.teams')"
+          :stats="stats"
+        />
+
         <TeamHeatmap
           :year="company_store.heatmap.year"
           :days="company_store.absences_by_day"
@@ -34,32 +47,18 @@
         />
 
         <div class="company-dashboard__grid">
-          <div class="company-dashboard__column">
-            <DashboardRequestStats
-              :pending="company_store.requests.pending"
-              :approved="company_store.requests.approved"
-              @details="router.push({ name: 'requests' })"
-            />
-
-            <DashboardRequestStats
-              :title="$t('dashboard.stats.accounts_title')"
-              :pending-label="$t('dashboard.stats.accounts_pending')"
-              :approved-label="$t('dashboard.stats.accounts_active')"
-              :pending="company_store.accounts.pending"
-              :approved="company_store.accounts.active"
-              @details="router.push({ name: 'employees' })"
-            />
-          </div>
-
           <DashboardMonthlyChart
+            class="company-dashboard__chart"
             :title="$t('dashboard.chart.absence_title')"
             :graphs="company_store.graphs"
           />
 
-          <div class="company-dashboard__column company-dashboard__column--lists">
-            <TeamUtilization :items="company_store.utilization" />
-            <TeamAbsentList :items="company_store.absent" />
-          </div>
+          <TeamAbsentList class="company-dashboard__absent" :items="company_store.absent" />
+
+          <TeamUtilization
+            class="company-dashboard__utilization"
+            :items="company_store.utilization"
+          />
         </div>
       </template>
     </div>
@@ -81,13 +80,14 @@ import VSelect from "@/components/VSelect.vue";
 import SubmitRequestButton from "@/views/requests/components/SubmitRequestButton.vue";
 import TeamHeatmap from "./components/TeamHeatmap.vue";
 import DayAbsencesDrawer from "./components/DayAbsencesDrawer.vue";
-import DashboardRequestStats from "./components/DashboardRequestStats.vue";
+import DashboardSummary from "./components/DashboardSummary.vue";
 import DashboardMonthlyChart from "./components/DashboardMonthlyChart.vue";
 import TeamUtilization from "./components/TeamUtilization.vue";
 import TeamAbsentList from "./components/TeamAbsentList.vue";
 import { PANEL_TABS } from "./dashboard-config";
 import { useCompanyDashboardStore } from "@/stores/company-dashboard";
 import { useRequestsStore } from "@/stores/requests";
+import { useCompanyStore } from "@/stores/company";
 import { getErrorMessage } from "@/utils/api-error";
 import { t } from "@/i18n";
 import { todayIso } from "@/utils/calendar-date";
@@ -96,6 +96,7 @@ const route = useRoute();
 const router = useRouter();
 const company_store = useCompanyDashboardStore();
 const requests_store = useRequestsStore();
+const company_profile = useCompanyStore();
 
 const tab = computed({
   get: () => route.path,
@@ -110,6 +111,50 @@ const message = computed(() => {
   return "";
 });
 
+// kompanija ili izabrani tim
+const summary_title = computed(() =>
+  company_store.team_id
+    ? (company_store.team_options.find((team) => team.value === company_store.team_id)?.label ?? "")
+    : company_profile.name
+);
+
+// avatari su timovi (inicijali naziva)
+const summary_people = computed(() =>
+  company_store.teams.map((team) => ({ id: team.id, name: team.name }))
+);
+
+const stats = computed(() => [
+  {
+    key: "absent",
+    icon: "flight_takeoff",
+    label: t("dashboard.summary.absent_today"),
+    value: company_store.absent.length
+  },
+  {
+    key: "pending",
+    icon: "hourglass_top",
+    label: t("dashboard.summary.pending"),
+    value: company_store.requests.pending,
+    tone: "warning",
+    to: { name: "requests" }
+  },
+  {
+    key: "approved",
+    icon: "task_alt",
+    label: t("dashboard.summary.approved"),
+    value: company_store.requests.approved,
+    tone: "success"
+  },
+  {
+    key: "accounts",
+    icon: "badge",
+    label: t("dashboard.summary.active_accounts"),
+    value: company_store.accounts.active,
+    suffix: company_store.accounts.pending ? `+${company_store.accounts.pending}` : "",
+    to: { name: "employees" }
+  }
+]);
+
 const day_open = ref(false);
 const day = ref(todayIso());
 
@@ -122,7 +167,8 @@ function openDay(iso) {
 watch(day, (iso) => {
   const year = Number(iso.slice(0, 4));
 
-  if (day_open.value && year && year !== company_store.heatmap.year) company_store.setHeatmapYear(year);
+  if (day_open.value && year && year !== company_store.heatmap.year)
+    company_store.setHeatmapYear(year);
 });
 
 onMounted(() => {
@@ -160,22 +206,35 @@ onUnmounted(() => company_store.resetStore());
     @include thin-scrollbar($primary);
   }
 
+  // grafikon široko, odsutni pored, iskorišćenost po timovima ispod
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: 30.125rem;
+    grid-template-areas:
+      "chart chart absent"
+      "util util util";
     gap: $space-16;
   }
 
-  &__column {
-    display: grid;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: $space-16;
-    min-width: 0;
-    min-height: 0;
+  &__chart {
+    grid-area: chart;
+    min-height: 22rem;
+  }
 
-    &--lists {
-      grid-template-rows: 14.75rem minmax(0, 1fr);
+  &__absent {
+    grid-area: absent;
+    max-height: 26rem;
+  }
+
+  // široka kartica, lista u dvije kolone
+  &__utilization {
+    grid-area: util;
+    max-height: 26rem;
+
+    :deep(.team-utilization__list) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: $space-32;
     }
   }
 
@@ -188,18 +247,12 @@ onUnmounted(() => company_store.resetStore());
 
   @include respond-to("laptop-sm") {
     &__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: auto;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "chart" "absent" "util";
     }
 
-    &__grid > * {
-      height: 30.125rem;
-    }
-
-    &__column--lists {
-      grid-column: 1 / -1;
-      grid-template-rows: auto;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    &__utilization :deep(.team-utilization__list) {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -213,23 +266,6 @@ onUnmounted(() => company_store.resetStore());
       flex: 1;
       width: auto;
       min-width: 0;
-    }
-
-    &__grid,
-    &__column--lists {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    &__grid > * {
-      height: auto;
-    }
-
-    &__column {
-      grid-template-rows: auto;
-    }
-
-    &__column--lists > * {
-      height: 22rem;
     }
   }
 }

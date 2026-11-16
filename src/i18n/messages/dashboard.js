@@ -33,6 +33,20 @@ export default {
     leave_types: Object.fromEntries(Object.keys(LEAVE_TYPES_EN).map((name) => [name, name])),
     view_details: "Vidi detalje",
     view_all: "Vidi sve",
+    summary: {
+      team_eyebrow: "Tim",
+      company_eyebrow: "Kompanija",
+      all_teams: "Svi timovi",
+      people: "Članovi tima",
+      members: "Članova",
+      absent_today: "Danas odsutno",
+      pending: "Zahtevi na čekanju",
+      approved: "Odobreni zahtevi",
+      utilization: "Iskorišćen godišnji",
+      teams: "Timova",
+      active_accounts: "Aktivni nalozi",
+      pending_accounts: "Pozivi na čekanju"
+    },
     welcome: {
       morning: "Dobro jutro,",
       afternoon: "Dobar dan,",
@@ -121,6 +135,20 @@ export default {
     leave_types: LEAVE_TYPES_EN,
     view_details: "View details",
     view_all: "View all",
+    summary: {
+      team_eyebrow: "Team",
+      company_eyebrow: "Company",
+      all_teams: "All teams",
+      people: "Team members",
+      members: "Members",
+      absent_today: "Away today",
+      pending: "Pending requests",
+      approved: "Approved requests",
+      utilization: "Annual leave used",
+      teams: "Teams",
+      active_accounts: "Active accounts",
+      pending_accounts: "Pending invites"
+    },
     welcome: {
       morning: "Good morning,",
       afternoon: "Good afternoon,",
