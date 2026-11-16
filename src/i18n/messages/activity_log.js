@@ -13,16 +13,36 @@ export default {
       date_from: "Datum od",
       date_to: "Datum do"
     },
-    columns: {
-      actor_name: "Akciju izvršio",
-      actor_type: "Tip izvršioca",
-      audit_type: "Tip akcije",
-      details: "Detalji akcije",
-      created_at: "Vreme izvršenja"
-    },
     // iza podebljanog broja prikazanih: "10 od 42 aktivnosti"
     count_of: "od {count} aktivnost | od {count} aktivnosti | od {count} aktivnosti",
+    shown: "Prikazano",
+    today: "Danas",
+    yesterday: "Juče",
+    // broj zapisa u zaglavlju dana
+    day_count: "{count} aktivnost | {count} aktivnosti | {count} aktivnosti",
+    load_more: "Učitaj još",
+    loading_more: "Učitavanje...",
+    all_loaded: "Prikazane su sve aktivnosti.",
+    details_toggle: "Detalji",
+    retry: "Pokušaj ponovo",
     empty: "Nema aktivnosti za prikaz.",
+    empty_hint: "Ovde će se pojaviti izmene, odobrenja i prijave čim se dogode.",
+    empty_filtered: "Nijedna aktivnost ne odgovara pretrazi ili filterima.",
+    empty_filtered_hint: "Promenite pojam pretrage ili uklonite filtere.",
+    // aria-label za listu
+    timeline_label: "Vremenska linija aktivnosti",
+    detail_labels: {
+      leave_type: "Tip odsustva",
+      requester: "Zaposleni",
+      version: "Verzija",
+      effective_from: "Stupa na snagu",
+      reason: "Razlog",
+      date: "Datum",
+      period: "Period",
+      email: "Email",
+      name: "Naziv",
+      source: "Izvor"
+    },
     actors: {
       system: "Sistem",
       employee: "Zaposleni",
@@ -90,7 +110,9 @@ export default {
       TEAM: "Tim",
       COMPANY: "Kompanija",
       NOTIFICATION: "Obaveštenje",
-      REPORT: "Izveštaj"
+      REPORT: "Izveštaj",
+      // prijave, lozinke i 2FA (samo čip entiteta)
+      ACCOUNT: "Nalog"
     },
     // muški | ženski | srednji | množina (rod imenice je u stores/activity-log.js)
     verbs: {
@@ -123,11 +145,6 @@ export default {
       NATIONAL: "Državni",
       RELIGIOUS: "Verski",
       COMPANY: "Kompanijski"
-    },
-    details: {
-      version: "Verzija {value}",
-      effective_from: "Stupa na snagu {date}",
-      reason: "Razlog: {value}"
     }
   },
   en: {
@@ -143,15 +160,33 @@ export default {
       date_from: "Date from",
       date_to: "Date to"
     },
-    columns: {
-      actor_name: "Performed by",
-      actor_type: "Actor type",
-      audit_type: "Action type",
-      details: "Details",
-      created_at: "Time"
-    },
     count_of: "of {count} activity | of {count} activities",
-    empty: "No activity to show.",
+    shown: "Showing",
+    today: "Today",
+    yesterday: "Yesterday",
+    day_count: "{count} activity | {count} activities",
+    load_more: "Load more",
+    loading_more: "Loading...",
+    all_loaded: "You're all caught up.",
+    details_toggle: "Details",
+    retry: "Try again",
+    empty: "No activity yet.",
+    empty_hint: "Changes, approvals and sign-ins will show up here as they happen.",
+    empty_filtered: "No activity matches your search or filters.",
+    empty_filtered_hint: "Try a different search term or clear the filters.",
+    timeline_label: "Activity timeline",
+    detail_labels: {
+      leave_type: "Leave type",
+      requester: "Employee",
+      version: "Version",
+      effective_from: "Effective from",
+      reason: "Reason",
+      date: "Date",
+      period: "Period",
+      email: "Email",
+      name: "Name",
+      source: "Source"
+    },
     actors: {
       system: "System",
       employee: "Employee",
@@ -218,7 +253,8 @@ export default {
       TEAM: "Team",
       COMPANY: "Company",
       NOTIFICATION: "Notification",
-      REPORT: "Report"
+      REPORT: "Report",
+      ACCOUNT: "Account"
     },
     // engleski glagol ima jedan oblik za sve rodove
     verbs: {
@@ -251,11 +287,6 @@ export default {
       NATIONAL: "National",
       RELIGIOUS: "Religious",
       COMPANY: "Company"
-    },
-    details: {
-      version: "Version {value}",
-      effective_from: "Effective {date}",
-      reason: "Reason: {value}"
     }
   }
 };

@@ -18,15 +18,6 @@ export default {
       slava: "Krsna slava",
       unpaid_leave: "Neplaćeno odsustvo"
     },
-    columns: {
-      name: "Ime",
-      approval: "Odobrenje",
-      kind: "Tip",
-      notice: "Rok za najavu",
-      reason: "Razlog",
-      past_dates: "Zakazivanje u prošlosti",
-      balance: "Umanjenje balansa"
-    },
     system: "Sistemski",
     custom: "Prilagođeni",
     approval: {
@@ -50,8 +41,45 @@ export default {
       no: "Ne umanjuje balans"
     },
     actions_for: "Akcije za {name}",
-    count: "od {total} tip | od {total} tipa | od {total} tipova",
     empty: "Nema tipova odsustva za prikaz.",
+    empty_text: "Dodajte prvi tip odsustva da bi zaposleni mogli da podnose zahteve.",
+    no_results: "Nijedan tip ne odgovara pretrazi",
+    no_results_text: "Probajte drugi naziv ili poništite filtere.",
+    reset_filters: "Poništi filtere",
+    search_placeholder: "Pretraži tipove odsustva",
+    summary: {
+      label: "Pregled tipova odsustva",
+      total: "Ukupno tipova",
+      system: "Sistemski",
+      custom: "Prilagođeni",
+      balance: "Umanjuju balans"
+    },
+    kind_filter: {
+      all: "Svi",
+      system: "Sistemski",
+      custom: "Prilagođeni"
+    },
+    sort: {
+      label: "Sortiranje",
+      name_asc: "Naziv A–Š",
+      name_desc: "Naziv Š–A",
+      notice_desc: "Najduža najava",
+      notice_asc: "Najkraća najava"
+    },
+    group_count: "{count} tip | {count} tipa | {count} tipova",
+    shown_count: "Prikazano {count} od {total}",
+    card: {
+      open_details: "Detalji tipa {name}",
+      notice: "Najava",
+      no_notice: "Bez roka",
+      approval: "Odobrenje",
+      reason: "Razlog",
+      past_dates: "Prošli datumi",
+      balance: "Balans",
+      balance_yes: "Umanjuje",
+      balance_no: "Ne umanjuje",
+      locked: "Sistemski tip se ne može menjati ni brisati"
+    },
     form: {
       add_title: "Dodaj tip odsustva",
       edit_title: "Izmeni tip odsustva",
@@ -96,15 +124,6 @@ export default {
       slava: "Slava (family patron saint day)",
       unpaid_leave: "Unpaid leave"
     },
-    columns: {
-      name: "Name",
-      approval: "Approval",
-      kind: "Type",
-      notice: "Notice period",
-      reason: "Reason",
-      past_dates: "Past dates",
-      balance: "Deducts balance"
-    },
     system: "System",
     custom: "Custom",
     approval: {
@@ -128,8 +147,45 @@ export default {
       no: "Doesn't deduct from balance"
     },
     actions_for: "Actions for {name}",
-    count: "of {total} type | of {total} types",
     empty: "No absence types to show.",
+    empty_text: "Add the first absence type so employees can start requesting time off.",
+    no_results: "No types match your search",
+    no_results_text: "Try another name or clear the filters.",
+    reset_filters: "Clear filters",
+    search_placeholder: "Search absence types",
+    summary: {
+      label: "Absence types overview",
+      total: "Total types",
+      system: "System",
+      custom: "Custom",
+      balance: "Deduct balance"
+    },
+    kind_filter: {
+      all: "All",
+      system: "System",
+      custom: "Custom"
+    },
+    sort: {
+      label: "Sort",
+      name_asc: "Name A–Z",
+      name_desc: "Name Z–A",
+      notice_desc: "Longest notice",
+      notice_asc: "Shortest notice"
+    },
+    group_count: "{count} type | {count} types",
+    shown_count: "Showing {count} of {total}",
+    card: {
+      open_details: "Details for {name}",
+      notice: "Notice",
+      no_notice: "None",
+      approval: "Approval",
+      reason: "Reason",
+      past_dates: "Past dates",
+      balance: "Balance",
+      balance_yes: "Deducts",
+      balance_no: "No deduction",
+      locked: "System types can't be edited or deleted"
+    },
     form: {
       add_title: "Add absence type",
       edit_title: "Edit absence type",

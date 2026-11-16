@@ -10,7 +10,7 @@ const initialsOf = (node) =>
     .join("")
     .toUpperCase();
 
-// pretraga bez kvačica: "petrovic" nalazi "Petrović"
+// pretraga bez kvačica: "obradovic" nalazi "Obradović"
 const normalize = (text) =>
   String(text ?? "")
     .toLowerCase()

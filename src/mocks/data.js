@@ -127,7 +127,7 @@ const USER_ROWS = [
   ["Ellen", "Huels", 6, 2, 5, "ACTIVE", "JEWISH", [11, 20]],
   ["Keith", "Hane", 6, 2, 5, "DEACTIVATED", "NONE", [0, 20]],
   ["Lacy", "Ritchie", 5, 2, 4, "ACTIVE", "ORTHODOX", [16, 21]],
-  ["Marko", "Petrović", 3, 2, 2, "ACTIVE", "ORTHODOX", [9, 20]],
+  ["Stefan", "Ilić", 3, 2, 2, "ACTIVE", "ORTHODOX", [9, 20]],
   ["Jelena", "Nikolić", 4, 2, 3, "ACTIVE", "ORTHODOX", [21, 23]]
 ];
 
@@ -428,7 +428,7 @@ export const createAuditLog = (users) => {
       }
     ],
     ["USER", 5, "USER_DEACTIVATED", { email: "keith.hane@codebron.rs" }],
-    ["USER", 1, "REPORT_GENERATED", { name: "Kiwi" }]
+    ["USER", 1, "REPORT_GENERATED", { name: "Software Development — oktobar 2026" }]
   ];
 
   // 3 kruga istih događaja unazad, dovoljno za nekoliko strana
@@ -459,55 +459,58 @@ export const createAdSettings = () => ({
 });
 
 // izvještaji (16.x)
-const REPORT_NAMES = [
-  "Orange",
-  "Apple",
-  "Banana",
-  "Grapefruit",
-  "Pineapple",
-  "Kiwi",
-  "Mango",
-  "Peach",
-  "Cherry",
-  "Lemon",
-  "Coconut",
-  "Papaya",
-  "Blueberry"
+const MONTH_NAMES = [
+  "januar",
+  "februar",
+  "mart",
+  "april",
+  "maj",
+  "jun",
+  "jul",
+  "avgust",
+  "septembar",
+  "oktobar",
+  "novembar",
+  "decembar"
 ];
+
+const REPORT_COUNT = 13;
+
+// naziv kao što bi ga HR dao: tim/kompanija + mesec perioda
+const reportName = (is_company, team_id, date_to) => {
+  const date = new Date(date_to);
+  const period = `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+
+  return is_company ? `Pregled odsustava kompanije — ${period}` : `${TEAMS[team_id]} — ${period}`;
+};
 
 export const createReports = (users) => {
   const emails = (count) => [1, 5, 6, 7, 8, 9, 10].slice(0, count).map((id) => users[id - 1].email);
 
-  return REPORT_NAMES.map((name, index) => {
+  return Array.from({ length: REPORT_COUNT }, (_, index) => {
     const is_company = index % 4 === 1;
     const team_id = [3, 4, 5, 6][index % 4];
     const author = users[index % 4];
     const back = 10 + index * 12;
+    const date_to = daysFromToday(-back);
 
     return {
       id: index + 1,
       scope: is_company ? "COMPANY" : "TEAM",
       team_id: is_company ? null : team_id,
       team_name: is_company ? null : TEAMS[team_id],
-      name,
+      name: reportName(is_company, team_id, date_to),
       description: is_company
         ? "Pregled odsustava za celu kompaniju u izabranom periodu."
         : `Mesečni pregled odsustava tima ${TEAMS[team_id]} — godišnji odmori, bolovanja i rad od kuće.`,
       date_from: daysFromToday(-back - 30),
-      date_to: daysFromToday(-back),
+      date_to,
       recipients: emails((index % 7) + 1),
       generated_by: { id: author.id, first_name: author.first_name, last_name: author.last_name },
       created_at: daysFromToday(-back + 1, `${pad(8 + (index % 9))}:15:00`)
     };
   });
 };
-
-// najmanji ispravan PDF, da preuzeti fajl može da se otvori
-export const MOCK_PDF =
-  "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
-  "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n" +
-  "4 0 obj<</Length 60>>stream\nBT /F1 24 Tf 72 760 Td (Awayly - probni izvestaj) Tj ET\nendstream endobj\n" +
-  "5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF";
 
 // radna mjesta za hijerarhiju (nije u API dokumentaciji), naziv je podatak sa servera
 const LEAD_POSITIONS = {

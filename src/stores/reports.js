@@ -35,6 +35,16 @@ const readBlobError = async (error) => {
 //API nema search parametar
 const SEARCH_KEYS = ["name", "description", "team", "generated_by"];
 
+// opcije sortiranja kartica: ključ i smjer
+export const REPORT_SORTS = {
+  newest: { key: "created_at", direction: "desc" },
+  oldest: { key: "created_at", direction: "asc" },
+  name: { key: "name", direction: "asc" }
+};
+
+// ALL | COMPANY | TEAM
+export const REPORT_SCOPES = ["ALL", "COMPANY", "TEAM"];
+
 export const useReportsStore = defineStore("reports", {
   state: () => ({
     items: [],
@@ -42,9 +52,11 @@ export const useReportsStore = defineStore("reports", {
     error: null,
     request_token: 0,
     search: "",
-    sort: null,
+    sort: "newest",
+    scope: "ALL",
     page: 1,
-    per_page: 10
+    // deljivo sa 2, 3 i 4 kolone kartica
+    per_page: 12
   }),
 
   getters: {
@@ -56,22 +68,35 @@ export const useReportsStore = defineStore("reports", {
         generated_by: script(item.generated_by)
       })),
 
-    // pretraga u browseru, 16.2 ima samo scope i team_id
+    // brojevi za traku iznad kartica, uvijek nad svim izveštajima
+    summary: (state) => {
+      const month = new Date().toISOString().slice(0, 7);
+      const company = state.items.filter((item) => item.scope === "COMPANY").length;
+
+      return {
+        total: state.items.length,
+        this_month: state.items.filter((item) => String(item.created_at).startsWith(month)).length,
+        company,
+        team: state.items.length - company
+      };
+    },
+
+    // pretraga i opseg u browseru, 16.2 ima samo scope i team_id
     filtered_items() {
       const query = this.search.trim().toLowerCase();
+      const rows =
+        this.scope === "ALL" ? this.rows : this.rows.filter((item) => item.scope === this.scope);
 
-      if (!query) return this.rows;
+      if (!query) return rows;
 
-      return this.rows.filter((item) =>
+      return rows.filter((item) =>
         SEARCH_KEYS.some((key) => item[key].toLowerCase().includes(query))
       );
     },
 
     // sortiranje takođe u browseru
     sorted_items() {
-      if (!this.sort) return this.filtered_items;
-
-      const { key, direction } = this.sort;
+      const { key, direction } = REPORT_SORTS[this.sort] ?? REPORT_SORTS.newest;
       const factor = direction === "asc" ? 1 : -1;
 
       return [...this.filtered_items].sort(
@@ -168,6 +193,11 @@ export const useReportsStore = defineStore("reports", {
 
     setSort(sort) {
       this.sort = sort;
+      this.page = 1;
+    },
+
+    setScope(scope) {
+      this.scope = scope;
       this.page = 1;
     },
 

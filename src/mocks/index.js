@@ -5,7 +5,6 @@ import {
   TEAMS,
   YEAR,
   DEFAULT_POLICY,
-  MOCK_PDF,
   createLeaveTypes,
   createRoles,
   createUsers,
@@ -28,6 +27,11 @@ import router from "@/router";
 import { START_LOCATION } from "vue-router";
 import { API_BASE_URL, APP_NAME } from "@/config";
 import company_logo from "@/assets/images/company/codebron.png";
+import { buildReportPdf } from "@/utils/report-pdf";
+import { leaveTypeCode } from "@/utils/leave-type-name";
+import { currentLocale } from "@/i18n";
+import reports_messages from "@/i18n/messages/reports";
+import absence_messages from "@/i18n/messages/absence_types";
 
 const API_URL = API_BASE_URL;
 const DELAY_MS = 300;
@@ -1677,7 +1681,15 @@ const ROUTES = [
   [
     "GET",
     "report/downloadReportHistory/:id",
-    () => new Response(MOCK_PDF, { headers: { "Content-Type": "application/pdf" } })
+    async ({ params }) => {
+      const report = db.reports.find((item) => item.id === Number(params.id));
+
+      if (!report) return notFound("Report");
+
+      return new Response(await reportPdf(report), {
+        headers: { "Content-Type": "application/pdf" }
+      });
+    }
   ],
 
   // 17. KALENDAR
@@ -1946,6 +1958,85 @@ const ROUTES = [
     }
   ]
 ];
+
+// PDF izveštaja: odsustva iz perioda i opsega izveštaja, šablon je utils/report-pdf.js
+const REPORT_STATUSES = ["APPROVED", "PENDING", "PENDING_CANCELLATION"];
+
+// logo je isječen (logo_crop) na canvasu, učitava se jednom
+let report_logo = null;
+
+const loadReportLogo = () =>
+  (report_logo ??= new Promise((resolve) => {
+    const image = new Image();
+    const [x, y, width, height] = db.company.logo_crop.split(" ").map(Number);
+
+    // manja slika je dovoljna za 4,5 cm širine i drži PDF malim
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, 640 / width);
+
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      canvas
+        .getContext("2d")
+        .drawImage(image, x, y, width, height, 0, 0, canvas.width, canvas.height);
+      resolve({ data_url: canvas.toDataURL("image/png"), width, height });
+    };
+    image.onerror = () => resolve(null);
+    image.src = db.company.logo_url;
+  }));
+
+async function reportPdf(report) {
+  // ćirilica nema font u jsPDF, pa sr-Cyrl dobija latinicu
+  const { messages: lang, intl } = currentLocale();
+  const labels = reports_messages[lang].pdf;
+  const typeName = (name) => absence_messages[lang].names[leaveTypeCode(name)] ?? name;
+  const from = day(report.date_from);
+  const to = day(report.date_to);
+
+  const rows = db.requests
+    .filter((request) => REPORT_STATUSES.includes(request.status))
+    .filter((request) => day(request.end_date) >= from && day(request.start_date) <= to)
+    .map((request) => ({ request, user: findUser(request.user_id) }))
+    .filter(
+      ({ user }) => user && (report.scope === "COMPANY" || user.team_id === Number(report.team_id))
+    )
+    .map(({ request, user }) => {
+      const start = day(request.start_date) < from ? from : day(request.start_date);
+      const end = day(request.end_date) > to ? to : day(request.end_date);
+
+      return {
+        employee: `${user.first_name} ${user.last_name}`,
+        team: TEAMS[user.team_id] ?? "-",
+        type: typeName(findType(request.leave_type_id)?.name ?? "-"),
+        from: start,
+        to: end,
+        days: workingDays(user.id, start, end),
+        status: request.status
+      };
+    })
+    .filter((row) => row.days > 0)
+    .sort((a, b) => a.from.localeCompare(b.from) || a.employee.localeCompare(b.employee));
+
+  const author = report.generated_by;
+
+  return buildReportPdf({
+    report: {
+      name: report.name,
+      description: report.description,
+      scope_label: report.scope === "COMPANY" ? labels.whole_company : report.team_name,
+      date_from: from,
+      date_to: to,
+      generated_by: [author?.first_name, author?.last_name].filter(Boolean).join(" "),
+      created_at: report.created_at
+    },
+    company: { name: db.company.name },
+    logo: await loadReportLogo(),
+    rows,
+    labels,
+    locale: intl.replace("sr-Cyrl", "sr-Latn")
+  });
+}
 
 // "user/getSingleUser/:id" -> regex
 const COMPILED = ROUTES.map(([method, path, handler]) => ({

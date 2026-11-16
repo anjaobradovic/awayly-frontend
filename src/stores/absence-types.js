@@ -4,7 +4,7 @@ import { fetchAllPages } from "@/utils/fetch-all-pages";
 import { leaveTypeName } from "@/utils/leave-type-name";
 import { intlLocale } from "@/i18n";
 
-// backend salje druga imena polja, ovdje ih prevodimo za tabelu
+// backend salje druga imena polja, ovdje ih prevodimo za kartice
 const toAbsenceType = (type) => ({
   id: type.id,
   // originalni naziv, za izmjenu se salje bas on; prevod pravi getter rows
@@ -17,20 +17,25 @@ const toAbsenceType = (type) => ({
   reduces_balance: type.counts_against_balance
 });
 
-const compareValues = (a, b) => {
-  if (typeof a === "number" && typeof b === "number") return a - b;
-
-  return String(a).localeCompare(String(b), intlLocale());
+// sortiranje kartica; ključ ide u absence_types.sort.<ključ>
+export const ABSENCE_TYPE_SORTS = {
+  name_asc: (a, b) => a.name.localeCompare(b.name, intlLocale()),
+  name_desc: (a, b) => b.name.localeCompare(a.name, intlLocale()),
+  notice_desc: (a, b) => (b.notice_days ?? 0) - (a.notice_days ?? 0),
+  notice_asc: (a, b) => (a.notice_days ?? 0) - (b.notice_days ?? 0)
 };
+
+// filter po vrsti: svi, sistemski ili prilagođeni
+export const ABSENCE_TYPE_KINDS = ["all", "system", "custom"];
 
 export const useAbsenceTypesStore = defineStore("absence-types", {
   state: () => ({
     items: [],
     is_loading: false,
     error: null,
-    sort: null,
-    page: 1,
-    per_page: 10
+    search: "",
+    kind: "all",
+    sort: "name_asc"
   }),
 
   getters: {
@@ -39,27 +44,38 @@ export const useAbsenceTypesStore = defineStore("absence-types", {
       return this.items.map((item) => ({ ...item, name: leaveTypeName(item.api_name) }));
     },
 
-    sorted_items() {
-      if (!this.sort) return this.rows;
+    // pretraga po prevedenom i originalnom nazivu, pa vrsta, pa sortiranje
+    filtered_items() {
+      const query = this.search.trim().toLocaleLowerCase(intlLocale());
+      const compare = ABSENCE_TYPE_SORTS[this.sort] ?? ABSENCE_TYPE_SORTS.name_asc;
 
-      const { key, direction } = this.sort;
-      const factor = direction === "asc" ? 1 : -1;
+      return this.rows
+        .filter((row) => {
+          if (this.kind === "system" && !row.is_system) return false;
+          if (this.kind === "custom" && row.is_system) return false;
+          if (!query) return true;
 
-      return [...this.rows].sort((a, b) => compareValues(a[key], b[key]) * factor);
+          return [row.name, row.api_name].some((name) =>
+            String(name ?? "")
+              .toLocaleLowerCase(intlLocale())
+              .includes(query)
+          );
+        })
+        .sort(compare);
     },
 
     total_items() {
-      return this.items.length;
+      return this.filtered_items.length;
     },
 
-    total_pages() {
-      return Math.max(1, Math.ceil(this.total_items / this.per_page));
-    },
-
-    paginated_items() {
-      const start = (this.page - 1) * this.per_page;
-
-      return this.sorted_items.slice(start, start + this.per_page);
+    // brojevi za traku iznad kartica, uvijek nad svim tipovima
+    summary() {
+      return {
+        total: this.items.length,
+        system: this.items.filter((item) => item.is_system).length,
+        custom: this.items.filter((item) => !item.is_system).length,
+        balance: this.items.filter((item) => item.reduces_balance).length
+      };
     }
   },
 
@@ -112,9 +128,22 @@ export const useAbsenceTypesStore = defineStore("absence-types", {
       await this.fetchTypes();
     },
 
-    setSort(sort) {
-      this.sort = sort;
-      this.page = 1;
+    setSearch(value) {
+      this.search = value ?? "";
+    },
+
+    setKind(value) {
+      this.kind = value;
+    },
+
+    setSort(value) {
+      this.sort = value;
+    },
+
+    resetFilters() {
+      this.search = "";
+      this.kind = "all";
+      this.sort = "name_asc";
     }
   }
 });

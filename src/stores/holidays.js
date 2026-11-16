@@ -3,7 +3,7 @@ import { useApi } from "@/composables/useApi";
 import { fetchAllPages } from "@/utils/fetch-all-pages";
 import { toApiDate } from "@/utils/api-date";
 import { countFilters } from "@/utils/filter-count";
-import { intlLocale, t, te } from "@/i18n";
+import { t, te } from "@/i18n";
 
 // vrste državnih praznika koje backend zna (filter ?type=)
 const STATE_KINDS = ["NATIONAL", "RELIGIOUS"];
@@ -28,11 +28,10 @@ const toCompanyHoliday = (holiday) => ({
   scope: "company"
 });
 
-// api 3.1, drzavni i vjerski praznici
-const fetchStateHolidays = async (type, year) => {
+// api 3.1, drzavni i vjerski praznici (vrsta se filtrira ovdje, da brojke ostanu tačne)
+const fetchStateHolidays = async (year) => {
   const { items, error } = await fetchAllPages("holiday/getGlobalHolidays", "holidays", {
-    year: { value: year },
-    type: { value: type }
+    year: { value: year }
   });
 
   return { items: items.map(toStateHoliday), error };
@@ -49,29 +48,125 @@ const fetchCompanyHolidays = async (year) => {
 
 const YEAR_RANGE = 3;
 
+const DAY_MS = 86_400_000;
+
+// "2026-05-01" -> broj dana od epohe, za razlike između datuma
+export const dayNumber = (key) => {
+  const [year, month, day] = key.split("-").map(Number);
+
+  return Date.UTC(year, month - 1, day) / DAY_MS;
+};
+
+// današnji dan kao "YYYY-MM-DD" u lokalnoj zoni
+export const todayKey = () => {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
+
+// "Nova godina (drugi dan)" -> "Nova godina"
+const baseName = (name = "") =>
+  name
+    .replace(/\s*\(.*\)\s*$/, "")
+    .trim()
+    .toLowerCase();
+
+// uzastopni dani istog državnog praznika postaju jedan raspon (1–2. januar)
+export const toSpans = (items) => {
+  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+  const spans = [];
+
+  for (const holiday of sorted) {
+    const key = holiday.date.slice(0, 10);
+    const last = spans[spans.length - 1];
+    const joins =
+      last &&
+      holiday.scope === "state" &&
+      last.scope === "state" &&
+      last.kind === holiday.kind &&
+      baseName(last.name) === baseName(holiday.name) &&
+      dayNumber(key) - dayNumber(last.end) === 1;
+
+    if (joins) {
+      last.end = key;
+      last.days += 1;
+      last.holidays.push(holiday);
+      continue;
+    }
+
+    spans.push({
+      id: holiday.id,
+      name: holiday.name,
+      kind: holiday.kind,
+      scope: holiday.scope,
+      start: key,
+      end: key,
+      days: 1,
+      holiday,
+      holidays: [holiday]
+    });
+  }
+
+  return spans;
+};
+
 export const useHolidaysStore = defineStore("holidays", {
   state: () => ({
     items: { state: [], company: [] },
     is_loading: false,
+    is_loaded: false,
     error: null,
     request_token: 0,
     scope: "state",
     search: "",
-    // ovo filtrira backend
-    filters: { type: null, year: null },
-    sort: null,
-    page: 1,
-    per_page: 10
+    // godina ide backendu, vrsta se filtrira na klijentu
+    filters: { type: null, year: null }
   }),
 
   getters: {
-    // ovdje je samo pretraga, api nema search parametar
+    // godina koja je prikazana (backend bez parametra vraća tekuću)
+    year: (state) => state.filters.year ?? new Date().getFullYear(),
+
+    // svi praznici godine, bez filtera, za istaknuti praznik i brojke
+    all_spans: (state) => toSpans([...state.items.state, ...state.items.company]),
+
+    // tab + vrsta + pretraga (api nema search parametar)
     filtered_items: (state) => {
       const query = state.search.trim().toLowerCase();
+      const type = state.scope === "state" ? state.filters.type : null;
 
       return state.items[state.scope].filter(
-        (item) => !query || item.name.toLowerCase().includes(query)
+        (item) =>
+          (!type || item.kind === type) && (!query || item.name.toLowerCase().includes(query))
       );
+    },
+
+    spans() {
+      return toSpans(this.filtered_items);
+    },
+
+    total_items() {
+      return this.filtered_items.length;
+    },
+
+    // broj praznika po vrsti, u danima
+    kind_counts: (state) => {
+      const counts = { total: 0, NATIONAL: 0, RELIGIOUS: 0, COMPANY: 0 };
+
+      for (const item of [...state.items.state, ...state.items.company]) {
+        counts.total += 1;
+        if (item.kind in counts) counts[item.kind] += 1;
+      }
+
+      return counts;
+    },
+
+    // sljedeći (ili današnji) neradni dan, iz oba izvora
+    next_span() {
+      const today = todayKey();
+
+      return this.all_spans.find((span) => span.end >= today) ?? null;
     },
 
     has_filters: (state) => Object.values(state.filters).some((value) => value !== null),
@@ -87,60 +182,35 @@ export const useHolidaysStore = defineStore("holidays", {
         { length: YEAR_RANGE * 2 + 1 },
         (_, index) => current + YEAR_RANGE - index
       ).map((year) => ({ value: year, label: String(year) }));
-    },
-
-    sorted_items() {
-      if (!this.sort) return this.filtered_items;
-
-      const { key, direction } = this.sort;
-      const factor = direction === "asc" ? 1 : -1;
-
-      // vrsta se sortira po prevedenom nazivu
-      const valueOf = (item) => (key === "kind" ? holidayKindLabel(item.kind) : item[key]);
-      const locale = intlLocale();
-
-      return [...this.filtered_items].sort(
-        (a, b) => String(valueOf(a)).localeCompare(String(valueOf(b)), locale) * factor
-      );
-    },
-
-    total_items() {
-      return this.sorted_items.length;
-    },
-
-    total_pages() {
-      return Math.max(1, Math.ceil(this.total_items / this.per_page));
-    },
-
-    paginated_items() {
-      const start = (this.page - 1) * this.per_page;
-
-      return this.sorted_items.slice(start, start + this.per_page);
     }
   },
 
   actions: {
-    async fetchHolidays(scope = this.scope) {
+    // oba izvora odjednom: tabovi se mijenjaju bez čekanja, a brojke su uvijek potpune
+    async fetchHolidays() {
       const token = ++this.request_token;
-      const { type, year } = this.filters;
+      const { year } = this.filters;
 
       this.is_loading = true;
       this.error = null;
 
       try {
-        const { items, error } =
-          scope === "state"
-            ? await fetchStateHolidays(type, year)
-            : await fetchCompanyHolidays(year);
+        const [state, company] = await Promise.all([
+          fetchStateHolidays(year),
+          fetchCompanyHolidays(year)
+        ]);
 
         if (token !== this.request_token) return;
+
+        const error = state.error ?? company.error;
 
         if (error) {
           this.error = error;
           return error;
         }
 
-        this.items[scope] = items;
+        this.items = { state: state.items, company: company.items };
+        this.is_loaded = true;
       } finally {
         if (token === this.request_token) this.is_loading = false;
       }
@@ -157,7 +227,7 @@ export const useHolidaysStore = defineStore("holidays", {
 
       if (error) return error;
 
-      await this.fetchHolidays("company");
+      await this.fetchHolidays();
     },
 
     // api 3.4
@@ -171,7 +241,7 @@ export const useHolidaysStore = defineStore("holidays", {
 
       if (error) return error;
 
-      await this.fetchHolidays("company");
+      await this.fetchHolidays();
     },
 
     // api 3.5
@@ -181,38 +251,31 @@ export const useHolidaysStore = defineStore("holidays", {
 
       if (error) return error;
 
-      await this.fetchHolidays("company");
+      await this.fetchHolidays();
     },
 
+    // podaci za oba taba su već tu, samo se vrsta poništava
     setScope(scope) {
       this.scope = scope;
-      this.page = 1;
-
       this.filters.type = null;
-
-      return this.fetchHolidays();
     },
 
     setFilters(filters) {
+      const year_changed = (filters.year ?? null) !== this.filters.year;
+
       this.filters = { ...this.filters, ...filters };
-      this.page = 1;
-      return this.fetchHolidays();
+      if (year_changed) return this.fetchHolidays();
     },
 
     clearFilters() {
+      const had_year = this.filters.year !== null;
+
       this.filters = { type: null, year: null };
-      this.page = 1;
-      return this.fetchHolidays();
+      if (had_year) return this.fetchHolidays();
     },
 
     setSearch(value) {
       this.search = value;
-      this.page = 1;
-    },
-
-    setSort(sort) {
-      this.sort = sort;
-      this.page = 1;
     },
 
     resetStore() {

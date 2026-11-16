@@ -126,7 +126,7 @@ export const auditTypeLabel = (value) => {
   return composeAuditLabel(key) ?? humanize(value);
 };
 
-const isDateKey = (key) => /(_date|_at|^date)$/.test(key);
+const isDateKey = (key) => /(_date|_at|^date|_from)$/.test(key);
 
 // datum se čita kako je poslat (samo dan), u UTC da zona ne pomjeri dan
 const parseDate = (value) => {
@@ -187,16 +187,42 @@ const valueLabel = (value) => {
   return VALUE_KEYS.has(text) ? t(`activity_log.values.${text}`) : humanize(text);
 };
 
-const LABELED_KEYS = {
-  version: (value) => t("activity_log.details.version", { value }),
-  effective_from: (value) =>
-    t("activity_log.details.effective_from", { date: formatSingleDate(value) }),
-  rejection_reason: (value) => t("activity_log.details.reason", { value }),
-  reason: (value) => t("activity_log.details.reason", { value })
+// metadata ključ -> naziv reda u detaljima (activity_log.detail_labels.*)
+const DETAIL_LABELS = new Set([
+  "leave_type",
+  "requester",
+  "version",
+  "effective_from",
+  "reason",
+  "date",
+  "period",
+  "email",
+  "name",
+  "source"
+]);
+
+const detailLabel = (key) => {
+  const label_key = /^leave_type(_name)?$/.test(key)
+    ? "leave_type"
+    : key === "rejection_reason"
+      ? "reason"
+      : key;
+
+  if (DETAIL_LABELS.has(label_key)) return t(`activity_log.detail_labels.${label_key}`);
+
+  return isDateKey(key) ? t("activity_log.detail_labels.date") : humanize(key);
+};
+
+const detailValue = (key, value) => {
+  if (/^leave_type(_name)?$/.test(key)) return leaveTypeName(value);
+  if (isDateKey(key)) return formatSingleDate(value);
+
+  return valueLabel(value);
 };
 
 const SKIPPED_KEYS = new Set(["id", "status"]);
 
+// redovi detalja [{ key, label, value }], redoslijed: tip, osoba, ostalo, period
 const toDetails = (metadata, user_names = {}) => {
   if (!metadata || typeof metadata !== "object") return [];
 
@@ -214,43 +240,148 @@ const toDetails = (metadata, user_names = {}) => {
   const end = entries.find(([key]) => /^(end_date|date_to|end)$/.test(key));
   const parts = [];
   const requester = user_names[metadata.requesting_user_id];
+  const row = (key, label, value) => ({ key, label, value: String(value) });
 
-  if (requester) parts.push([1, script(requester)]);
+  if (requester) {
+    parts.push([1, row("requester", t("activity_log.detail_labels.requester"), script(requester))]);
+  }
 
   for (const [key, value] of entries) {
     if (start && end && (key === start[0] || key === end[0])) continue;
 
-    if (/^leave_type(_name)?$/.test(key)) parts.push([0, leaveTypeName(value)]);
-    else if (LABELED_KEYS[key]) parts.push([2, LABELED_KEYS[key](value)]);
-    else if (isDateKey(key)) parts.push([2, formatSingleDate(value)]);
-    else parts.push([2, valueLabel(value)]);
+    const order = /^leave_type(_name)?$/.test(key) ? 0 : 2;
+
+    parts.push([order, row(key, detailLabel(key), detailValue(key, value))]);
   }
 
-  if (start && end) parts.push([3, formatRange(start[1], end[1])]);
+  if (start && end) {
+    parts.push([
+      3,
+      row("period", t("activity_log.detail_labels.period"), formatRange(start[1], end[1]))
+    ]);
+  }
 
-  return parts.sort((a, b) => a[0] - b[0]).map(([, text]) => text);
+  return parts.sort((a, b) => a[0] - b[0]).map(([, item]) => item);
 };
 
-// red tabele; zove se u getteru da bi tekstovi pratili promjenu jezika
+// vrsta radnje -> boja i ikonica tačke na vremenskoj liniji
+// ton: success | accent | error | warning | info | neutral
+const VERB_KINDS = {
+  CREATED: ["success", "add"],
+  ADDED: ["success", "person_add"],
+  SETUP: ["success", "tune"],
+  APPROVED: ["success", "check"],
+  ACTIVATED: ["success", "bolt"],
+  UPDATED: ["accent", "edit"],
+  MODIFIED: ["accent", "edit"],
+  CHANGED: ["accent", "edit"],
+  ASSIGNED: ["accent", "assignment_ind"],
+  GENERATED: ["accent", "description"],
+  SYNCED: ["accent", "sync"],
+  DELETED: ["error", "delete"],
+  REMOVED: ["error", "remove"],
+  DEACTIVATED: ["error", "block"],
+  REJECTED: ["error", "close"],
+  CANCELLED: ["warning", "event_busy"],
+  WITHDRAWN: ["warning", "undo"],
+  INTERRUPTED: ["warning", "pause"],
+  CANCELLATION_REQUESTED: ["warning", "event_busy"],
+  SCHEDULED: ["info", "schedule"],
+  ESCALATED: ["info", "trending_up"]
+};
+
+// prijave, lozinke i nalozi: plava (bezbjednost), problemi crveni
+const SECURITY_KINDS = {
+  LOGIN: ["info", "login"],
+  LOGOUT: ["info", "logout"],
+  LOGIN_FAILED: ["error", "gpp_bad"],
+  ACCOUNT_ACTIVATED: ["success", "verified_user"],
+  ACCOUNT_LOCKED: ["error", "lock"],
+  PASSWORD_CHANGED: ["info", "key"],
+  PASSWORD_RESET: ["info", "lock_reset"],
+  PASSWORD_RESET_REQUESTED: ["info", "lock_reset"],
+  TOTP_RESET: ["info", "phonelink_lock"]
+};
+
+// ikonica entiteta u čipu
+const NOUN_ICONS = {
+  LEAVE_REQUEST: "event_note",
+  LEAVE_TYPE: "category",
+  LEAVE_BALANCE: "account_balance_wallet",
+  APPROVAL_CHAIN: "account_tree",
+  AD_SETTINGS: "dns",
+  POLICY: "policy",
+  HOLIDAY: "celebration",
+  DELEGATION: "swap_horiz",
+  USER: "person",
+  ROLE: "admin_panel_settings",
+  TEAM: "groups",
+  COMPANY: "business",
+  NOTIFICATION: "notifications",
+  REPORT: "summarize",
+  ACCOUNT: "shield"
+};
+
+const auditNoun = (key) =>
+  AUDIT_NOUNS.find(([prefix]) => key === prefix || key.startsWith(`${prefix}_`))?.[0] ?? null;
+
+const auditKind = (value) => {
+  const key = normalizeKey(value);
+
+  if (SECURITY_KINDS[key]) {
+    const [tone, icon] = SECURITY_KINDS[key];
+    return { tone, icon, noun: "ACCOUNT" };
+  }
+
+  const noun = auditNoun(key);
+  const verb = noun ? key.slice(noun.length + 1) : key;
+  const [tone, icon] =
+    VERB_KINDS[verb] ??
+    Object.entries(VERB_KINDS).find(([name]) => verb.endsWith(name))?.[1] ?? [
+      "neutral",
+      "history"
+    ];
+
+  return { tone, icon, noun };
+};
+
+const initials = (name = "") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+
+// zapis za vremensku liniju; zove se u getteru da bi tekstovi pratili promjenu jezika
 const toEntry = (entry, user_names) => {
   const is_system = normalizeKey(entry.actor_type) === "SYSTEM";
   const type = actorType(entry.actor_type);
   const details = toDetails(entry.metadata, user_names);
+  const kind = auditKind(entry.audit_type);
+  const actor_name = entry.actor_name
+    ? script(entry.actor_name)
+    : is_system
+      ? t("activity_log.actors.system")
+      : "—";
 
   return {
     id: entry.id,
-    actor_name: entry.actor_name
-      ? script(entry.actor_name)
-      : is_system
-        ? t("activity_log.actors.system")
-        : "—",
+    actor_name,
+    actor_initials: is_system ? "" : initials(actor_name),
     actor_type: type.label,
     actor_tone: type.tone,
     is_system,
     audit_type: entry.audit_type,
     audit_label: auditTypeLabel(entry.audit_type),
+    tone: kind.tone,
+    icon: kind.icon,
+    entity: kind.noun
+      ? { label: t(`activity_log.nouns.${kind.noun}`), icon: NOUN_ICONS[kind.noun] ?? "label" }
+      : null,
     details,
-    details_text: details.join(" "),
+    details_text: details.map((item) => `${item.label} ${item.value}`).join(" "),
     created_at: entry.created_at
   };
 };
@@ -264,12 +395,14 @@ export const useActivityLogStore = defineStore("activity-log", {
     total_count: 0,
     user_names: {},
     is_loading: false,
+    // učitavanje sledeće strane ("Učitaj još"), lista ostaje vidljiva
+    is_loading_more: false,
     error: null,
     request_token: 0,
     search: "",
     filters: createDefaultFilters(),
     page: 1,
-    per_page: 10
+    per_page: 15
   }),
 
   getters: {
@@ -285,7 +418,7 @@ export const useActivityLogStore = defineStore("activity-log", {
 
     rows: (state) => state.items.map((entry) => toEntry(entry, state.user_names)),
 
-    // API 18.1 nema parametar za tekst, pretraga radi samo nad učitanom stranom
+    // API 18.1 nema parametar za tekst, pretraga radi samo nad učitanim zapisima
     visible_items() {
       const query = this.search.trim().toLowerCase();
 
@@ -299,16 +432,22 @@ export const useActivityLogStore = defineStore("activity-log", {
       );
     },
 
-    total_pages: (state) => Math.max(1, Math.ceil(state.total_count / state.per_page))
+    total_pages: (state) => Math.max(1, Math.ceil(state.total_count / state.per_page)),
+
+    has_more: (state) => state.items.length < state.total_count
   },
 
   actions: {
-    async fetchEntries() {
+    // append: sledeća strana se dodaje na već učitane zapise
+    async fetchEntries({ append = false } = {}) {
       const token = ++this.request_token;
       const { audit_type, date_from, date_to } = this.filters;
       const { get } = useApi();
+      const loading_key = append ? "is_loading_more" : "is_loading";
 
-      this.is_loading = true;
+      if (!append) this.page = 1;
+
+      this[loading_key] = true;
       this.error = null;
 
       try {
@@ -328,6 +467,7 @@ export const useActivityLogStore = defineStore("activity-log", {
 
         if (error) {
           this.error = error;
+          if (append) this.page -= 1;
           return error;
         }
 
@@ -338,10 +478,19 @@ export const useActivityLogStore = defineStore("activity-log", {
 
         if (token !== this.request_token) return;
 
-        this.items = entries;
+        if (append) {
+          const known = new Set(this.items.map((entry) => entry.id));
+          this.items = [...this.items, ...entries.filter((entry) => !known.has(entry.id))];
+        } else {
+          this.items = entries;
+        }
+
         this.total_count = payload?.total_count ?? 0;
       } finally {
-        if (token === this.request_token) this.is_loading = false;
+        if (token === this.request_token) {
+          this.is_loading = false;
+          this.is_loading_more = false;
+        }
       }
     },
 
@@ -369,9 +518,11 @@ export const useActivityLogStore = defineStore("activity-log", {
       this.user_names = names;
     },
 
-    setPage(page) {
-      this.page = page;
-      return this.fetchEntries();
+    loadMore() {
+      if (!this.has_more || this.is_loading || this.is_loading_more) return;
+
+      this.page += 1;
+      return this.fetchEntries({ append: true });
     },
 
     setSearch(value) {
@@ -380,13 +531,11 @@ export const useActivityLogStore = defineStore("activity-log", {
 
     setFilters(filters) {
       this.filters = { ...this.filters, ...filters };
-      this.page = 1;
       return this.fetchEntries();
     },
 
     clearFilters() {
       this.filters = createDefaultFilters();
-      this.page = 1;
       return this.fetchEntries();
     },
 
