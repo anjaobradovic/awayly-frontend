@@ -1,0 +1,81 @@
+// ovdje ide samo ono sto se ponavlja i ima parametre, vrijednosti su u _variables
+
+@use "sass:map";
+@use "sass:list";
+@use "variables" as *;
+
+// skracenica za flex kontejner
+
+@mixin flex($justify: flex-start, $align: center, $gap: 0, $direction: row) {
+  display: flex;
+  justify-content: $justify;
+  align-items: $align;
+  gap: $gap;
+  flex-direction: $direction;
+}
+
+// media query po imenu breakpointa, max-width (desktop first)
+
+@mixin respond-to($breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
+    @media screen and (max-width: map.get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  } @else {
+    @error "Nepoznat breakpoint `#{$breakpoint}`. Dostupni: #{map.keys($breakpoints)}.";
+  }
+}
+
+// tekst u jednom redu sa tri tacke na kraju
+@mixin truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// tanak skrol, boja rucice se prosledjuje (default siva)
+
+@mixin thin-scrollbar($thumb: $cold-200) {
+  overflow-y: scroll;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $cold-25;
+    border: 1px solid $border-default;
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $thumb;
+    background-clip: padding-box;
+    border: 1px solid transparent;
+    border-radius: 2px;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: $thumb $cold-25;
+  }
+}
+
+// boje za stanja kontrole
+$feedback-accents: (
+  primary: list.nth(map.get($variants, primary), 1),
+  info: $info,
+  success: $success,
+  warning: $warning,
+  error: $error
+);
+
+// generise klase za boje
+
+@mixin accent-vars($prefix, $var: --v-accent, $map: $feedback-accents) {
+  @each $name, $value in $map {
+    .#{$prefix}--#{$name} {
+      #{$var}: #{$value};
+    }
+  }
+}

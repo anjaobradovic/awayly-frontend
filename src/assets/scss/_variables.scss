@@ -1,0 +1,411 @@
+@use "sass:list";
+@use "sass:map";
+@use "sass:meta";
+
+@use "palette" as *;
+
+// boja koja zavisi od teme je var(--c-ime), vrijednosti su u _palette.scss
+@function themed($name) {
+  @return var(--c-#{$name});
+}
+
+// providnost i za css varijable (rgba() radi samo sa pravom bojom)
+@function alpha($color, $amount) {
+  @if meta.type-of($color) == "color" {
+    @return rgba($color, $amount);
+  }
+  @return color-mix(in srgb, #{$color} #{$amount * 100%}, transparent);
+}
+
+// svjetlija / tamnija nijansa, radi i sa css varijablama
+@function tint($color, $amount) {
+  @return color-mix(in srgb, #{$color}, #ffffff #{$amount});
+}
+
+@function shade($color, $amount) {
+  @return color-mix(in srgb, #{$color}, #000000 #{$amount});
+}
+
+$primary-350: themed(primary-350); // grafikoni i preneseni dani na ličnom panelu
+$primary-400: themed(primary-400); // hover
+$primary-500: themed(primary-500); // default (boja akcenta)
+$primary-600: themed(primary-600);
+$primary-700: themed(primary-700); // pressed
+
+// neutral cold, plavkasta siva za tekst, ivice i table head
+$cold-25: themed(cold-25);
+$cold-50: themed(cold-50);
+$cold-75: themed(cold-75);
+$cold-100: themed(cold-100);
+$cold-125: themed(cold-125); // hover dana u godišnjem prikazu kalendara
+$cold-200: themed(cold-200);
+$cold-225: themed(cold-225);
+$cold-300: themed(cold-300); // iskorišćeni dani u legendi ličnog panela
+$cold-350: themed(cold-350); // info ikonica pored na cekanju
+$cold-550: themed(cold-550);
+$cold-600: themed(cold-600);
+$cold-650: themed(cold-650);
+$cold-850: themed(cold-850);
+$cold-900: themed(cold-900);
+
+// neutral true, cista siva za disabled, stroke i table body
+$true-350: themed(true-350);
+$true-500: themed(true-500);
+$true-700: themed(true-700);
+$true-800: themed(true-800);
+$true-850: themed(true-850);
+
+// neutral warm
+$warm-50: themed(warm-50);
+
+// površine
+$surface-0: themed(surface-0);
+$surface-1: themed(surface-1);
+$sidebar-background: themed(sidebar);
+$sidebar-border: themed(sidebar-border);
+
+// status
+$success-500: #12a150;
+$success-950: #011008;
+$error-100: themed(error-100); // mapa odsustva na timskom panelu (malo odsutnih)
+$error-300: #f18d8d;
+$error-500: #e5484d;
+$error-950: #170606;
+$information-500: #3b6ff5;
+$information-950: #060b19;
+$warning-500: #f59310;
+$warning-950: #190e01;
+
+// status delegacije
+$teal-500: #157d7d;
+
+// Kategorije odsustva
+$absence-vacation: #0284c7;
+$absence-family: #0e9ba0;
+$absence-paid: $warning-500;
+$absence-other: #6b7280;
+
+// foundation
+$white: #ffffff;
+$black: #000000;
+
+// text
+$fg-heading: $cold-900;
+$fg-heading-inverse: $white;
+$fg-body: $cold-550;
+$fg-action: $primary-500;
+$fg-action-hover: $primary-400;
+$fg-action-disabled: $true-700;
+$fg-on-action: $white; // tekst na crvenom dugmetu
+$fg-success: $success-500;
+$fg-error: $error-500;
+$fg-information: $information-500;
+$fg-warning: $warning-500;
+
+$fg-default: $fg-heading;
+$fg-muted: $fg-body;
+$fg-disabled: $fg-action-disabled;
+$fg-inverse: $fg-heading-inverse;
+
+// border
+$border-default: $cold-100;
+$border-action: $primary-500;
+$border-action-focused: $cold-900;
+$border-action-disabled: $true-700;
+$border-success: $success-500;
+$border-warning: $warning-500;
+$border-error: $error-500;
+$border-information: $information-500;
+$border-stroke: $true-500;
+
+// surface
+$surface-background: $surface-0; // pozadina stranice
+$surface-default: $surface-1; // kartice, paneli, input
+$surface-default-hover: $cold-25;
+$surface-default-pressed: $cold-225;
+$surface-disabled: $true-700;
+$surface-action: $primary-500; // filled dugme
+$surface-action-hover: $primary-400;
+$surface-action-pressed: $primary-700;
+$surface-success: $success-950;
+$surface-error: $error-950;
+$surface-information: $information-950;
+$surface-warning: $warning-950;
+$surface-table-head: $cold-50;
+$surface-table-body-odd: $true-800;
+$surface-table-body-even: $true-850;
+
+$surface-sunken: $surface-background;
+$surface-field: $surface-default;
+
+// icon
+$icon-on-action-inverse: $warm-50;
+$icon-on-action: $cold-850;
+$icon-default: $cold-650;
+$icon-action: $primary-500;
+$icon-action-hover: $primary-400;
+$icon-action-disabled: $true-700;
+$icon-success: $success-500;
+$icon-error: $error-500;
+$icon-information: $information-500;
+$icon-warning: $warning-500;
+
+// alpha
+$alpha-blue: alpha($information-500, 0.1);
+$alpha-green: alpha($success-500, 0.1);
+$alpha-red: alpha($error-500, 0.1);
+$alpha-orange: alpha($warning-500, 0.1);
+$alpha-white: rgba($white, 0.1);
+$alpha-black: rgba($black, 0.1);
+$alpha-primary-5: alpha($primary-500, 0.05);
+$alpha-primary-10: alpha($primary-500, 0.1);
+$alpha-primary-20: alpha($primary-500, 0.2);
+
+$primary: $primary-500;
+$info: $information-500;
+$warning: $warning-500;
+$error: $error-500;
+$success: $success-500;
+
+// mape za komponente
+$variants: (
+  primary: (
+    $surface-action,
+    $surface-action-hover,
+    $surface-action-pressed
+  ),
+  neutral: (
+    $true-700,
+    $true-500,
+    $true-800
+  ),
+  success: (
+    $success-500,
+    tint($success-500, 8%),
+    shade($success-500, 10%)
+  ),
+  error: (
+    $error-500,
+    tint($error-500, 8%),
+    shade($error-500, 10%)
+  ),
+  information: (
+    $information-500,
+    tint($information-500, 8%),
+    shade($information-500, 10%)
+  ),
+  warning: (
+    $warning-500,
+    tint($warning-500, 8%),
+    shade($warning-500, 10%)
+  )
+);
+// global.scss ovo pretvara u css varijable, a resolveColor() ih cita
+$colors: (
+  // brand & status
+  primary: $primary,
+  primary-350: $primary-350,
+  primary-400: $primary-400,
+  primary-500: $primary-500,
+  cold-300: $cold-300,
+  primary-700: $primary-700,
+  info: $info,
+  warning: $warning,
+  error: $error,
+  success: $success,
+  "white": $white,
+  "black": $black,
+
+  // kategorije odsustva
+  absence-vacation: $absence-vacation,
+  absence-family: $absence-family,
+  absence-paid: $absence-paid,
+  absence-other: $absence-other,
+
+  // text
+  fg-heading: $fg-heading,
+  fg-heading-inverse: $fg-heading-inverse,
+  fg-body: $fg-body,
+  fg-action: $fg-action,
+  fg-action-hover: $fg-action-hover,
+  fg-action-disabled: $fg-action-disabled,
+  fg-on-action: $fg-on-action,
+  fg-default: $fg-default,
+  fg-muted: $fg-muted,
+  fg-disabled: $fg-disabled,
+  fg-inverse: $fg-inverse,
+
+  // border
+  border-default: $border-default,
+  border-action: $border-action,
+  border-action-focused: $border-action-focused,
+  border-action-disabled: $border-action-disabled,
+  border-stroke: $border-stroke,
+
+  // surface
+  surface-background: $surface-background,
+  surface-default: $surface-default,
+  surface-default-hover: $surface-default-hover,
+  surface-default-pressed: $surface-default-pressed,
+  surface-disabled: $surface-disabled,
+  surface-action: $surface-action,
+  surface-action-hover: $surface-action-hover,
+  surface-action-pressed: $surface-action-pressed,
+  surface-table-head: $surface-table-head,
+  surface-sunken: $surface-sunken,
+  surface-field: $surface-field,
+
+  // icon
+  icon-default: $icon-default,
+  icon-action: $icon-action,
+  icon-action-hover: $icon-action-hover,
+  icon-action-disabled: $icon-action-disabled,
+  icon-on-action: $icon-on-action,
+  icon-on-action-inverse: $icon-on-action-inverse,
+
+  // neutral rampe
+  cold-25: $cold-25,
+  cold-50: $cold-50,
+  cold-75: $cold-75,
+  cold-100: $cold-100,
+  cold-225: $cold-225,
+  cold-550: $cold-550,
+  cold-650: $cold-650,
+  cold-850: $cold-850,
+  cold-900: $cold-900,
+  true-500: $true-500,
+  true-700: $true-700,
+  true-800: $true-800,
+  true-850: $true-850,
+  warm-50: $warm-50
+);
+
+// Typography
+$font-family: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+
+// visine kontrola, dugmad i inputi su iste visine
+$size-small: 1.5rem;
+$size-medium: calc(2rem + 2px); // 32 + ivica gore i dolje
+$size-large: 3rem;
+$size-header: 2.5rem; // kontrole u headeru
+$sidebar-width: 6rem;
+
+// spacing, ime je px a vrijednost u rem
+$space-2: 0.125rem;
+$space-4: 0.25rem;
+$space-6: 0.375rem;
+$space-8: 0.5rem;
+$space-10: 0.625rem;
+$space-12: 0.75rem;
+$space-14: 0.875rem;
+$space-16: 1rem;
+$space-18: 1.125rem;
+$space-20: 1.25rem;
+$space-22: 1.375rem;
+$space-24: 1.5rem;
+$space-26: 1.625rem;
+$space-28: 1.75rem;
+$space-30: 1.875rem;
+$space-32: 2rem;
+$space-34: 2.125rem;
+$space-36: 2.25rem;
+$space-38: 2.375rem;
+$space-40: 2.5rem;
+$space-48: 3rem;
+$space-56: 3.5rem;
+$space-64: 4rem;
+$space-96: 6rem;
+
+// Radius
+$radius-xs: 4px;
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 10px;
+$radius-xl: 16px;
+$radius-pill: 100vmax;
+
+// font size, ime je px a vrijednost u rem
+$text-10: 0.625rem;
+$text-11: 0.6875rem;
+$text-12: 0.75rem;
+$text-13: 0.8125rem;
+$text-14: 0.875rem;
+$text-16: 1rem;
+$text-18: 1.125rem;
+$text-20: 1.25rem;
+$text-22: 1.375rem;
+$text-24: 1.5rem;
+$text-26: 1.625rem;
+$text-28: 1.75rem;
+$text-30: 1.875rem;
+$text-32: 2rem;
+$text-34: 2.125rem;
+$text-36: 2.25rem;
+$text-38: 2.375rem;
+$text-40: 2.5rem;
+$text-48: 3rem;
+
+// Font weight
+$weight-regular: 400;
+$weight-medium: 500;
+$weight-semibold: 600;
+$weight-bold: 700;
+
+// Line height
+$leading-xxs: 14px;
+$leading-xs: 16px;
+$leading-sm: 20px;
+$leading-md: 28px;
+$leading-lg: 32px;
+$leading-xl: 40px;
+$leading-xxl: 56px;
+$leading-18: 18px;
+$leading-24: 24px;
+
+// breakpoints, max-width (desktop first)
+$breakpoints: (
+  "mobile-sm": 400px,
+  "mobile": 640px,
+  "tablet-sm": 768px,
+  "tablet": 1000px,
+  "laptop-sm": 1200px,
+  "laptop-md": 1300px,
+  "laptop": 1440px,
+  "desktop": 1600px
+);
+
+// z-index
+$z-dropdown: 20;
+$z-sticky: 999;
+$z-modal: 1000;
+$z-popup: 2500;
+$z-tooltip: 3000;
+$z-snackbar: 4000;
+
+// Shadows
+$shadow-1:
+  0 1px 2px 1px rgba($black, 0.06),
+  0 4px 6px 2px rgba($black, 0.04);
+$shadow-2:
+  0 2px 4px 1px rgba($black, 0.08),
+  0 8px 20px 2px rgba($black, 0.06);
+// auth kartica
+$shadow-card:
+  0 4px 44.8px 0 rgba($black, 0.08),
+  0 0 4px 0 rgba($black, 0.25);
+// okvir tabele i kartice
+$shadow-small:
+  0 1px 1px 0 rgba($black, 0.05),
+  0 2px 10px 0 rgba($black, 0.1);
+// navbar, naslov strane, sidebar i zaglavlje tabele
+$shadow-header:
+  0 1px 0.5px 0 rgba($black, 0.05),
+  0 2px 5px 0 rgba($black, 0.1);
+// dropdown meni
+$shadow-menu: 0 0 20px 0 rgba($black, 0.25);
+$shadow-3:
+  0 4px 6px 2px rgba($black, 0.1),
+  0 1px 2px 1px rgba($black, 0.08);
+
+// Transition
+$transition: all 0.2s ease-in-out;

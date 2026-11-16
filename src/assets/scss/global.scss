@@ -1,0 +1,106 @@
+// bazni stilovi cijele aplikacije
+
+@use "sass:map";
+@use "@/assets/scss/index" as *;
+
+@layer base {
+  // sirove boje teme, $primary-500 i ostali tokeni pokazuju na ove varijable
+  :root {
+    color-scheme: light;
+
+    @each $name, $value in $palette-light {
+      --c-#{$name}: #{$value};
+    }
+
+    @each $name, $value in map.get($accents, $default-accent) {
+      --c-#{$name}: #{$value};
+    }
+
+    // semantički tokeni iz $colors, da ih resolveColor() vidi iz JS-a
+    @each $name, $value in $colors {
+      @if not map.has-key($palette-light, $name) and not map.has-key(map.get($accents, $default-accent), $name) {
+        --c-#{$name}: #{$value};
+      }
+    }
+  }
+
+  // tamna tema, data-theme postavlja stores/theme.js
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+
+    @each $name, $value in $palette-dark {
+      --c-#{$name}: #{$value};
+    }
+  }
+
+  // boja akcenta, data-accent postavlja stores/theme.js
+  @each $accent, $shades in $accents {
+    :root[data-accent="#{$accent}"] {
+      @each $name, $value in $shades {
+        --c-#{$name}: #{$value};
+      }
+    }
+  }
+
+  html,
+  body,
+  #app {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+  }
+
+  body {
+    font-family: $font-family;
+    transition: background-color 0.2s ease;
+    background-color: $surface-background;
+    color: $fg-heading;
+    font-size: $text-14;
+    line-height: $leading-sm;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  // scrollbar se stilizuje jednom, globalno
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: $surface-default-hover;
+    border-radius: $radius-lg;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: $cold-225;
+    border-radius: $radius-lg;
+
+    &:hover {
+      background: $cold-550;
+    }
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: $surface-default-hover;
+  }
+
+  // Na malim ekranima scrollbar se sakriva
+  @include respond-to("tablet-sm") {
+    * {
+      scrollbar-width: none;
+    }
+
+    *::-webkit-scrollbar,
+    *::-webkit-scrollbar-corner {
+      display: none;
+    }
+  }
+}
+
+.h-100 {
+  height: 100%;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}

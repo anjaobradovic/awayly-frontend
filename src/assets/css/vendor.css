@@ -1,0 +1,13 @@
+/*
+  Third-party CSS, pulled into the `vendor` cascade layer.
+
+  Material Icons declares `display: inline-block`, `font-size` and `line-height`
+  on `.material-icons`, and VIcon puts that class on the same element as its own
+  `.v-icon` rules. Unlayered CSS beats layered CSS regardless of specificity, so
+  importing this the plain way would let the vendor sheet override every shared
+  component. `layer(vendor)` sits it below `components`, restoring the intent.
+
+  Layer order is declared in index.html.
+*/
+@import "material-icons/iconfont/material-icons.css" layer(vendor);
+@import "material-icons/iconfont/outlined.css" layer(vendor);

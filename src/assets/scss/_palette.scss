@@ -1,0 +1,111 @@
+// sirove boje po temi, global.scss od njih pravi --c-ime varijable
+// _variables.scss pokazuje na te varijable, pa se tema mijenja bez rebuilda
+
+// svijetla tema (podrazumevana)
+$palette-light: (
+  // površine
+  surface-0: #f4f6fa, // pozadina stranice
+  surface-1: #ffffff, // kartice, paneli, inputi
+  sidebar: #141a2a,
+  sidebar-border: #232b3f,
+
+  // neutral cold
+  cold-25: #f8fafc,
+  cold-50: #f2f5f9,
+  cold-75: #eaeef4,
+  cold-100: #e2e8f0,
+  cold-125: #d9e0ea,
+  cold-200: #c5cfdc,
+  cold-225: #bcc8d6,
+  cold-300: #a9b6c6,
+  cold-350: #8d9db1,
+  cold-550: #546378,
+  cold-600: #435269,
+  cold-650: #4a5568,
+  cold-850: #222b3d,
+  cold-900: #111a2c,
+
+  // neutral true
+  true-350: #a6a6a6,
+  true-500: #7a7a7a,
+  true-700: #4c4c4c,
+  true-800: #333333,
+  true-850: #262626,
+
+  warm-50: #f5f4f2,
+  error-100: #fbdcdc
+);
+
+// tamna tema, neutralne rampe su obrnute: "svijetla" polja postaju tamna i obrnuto
+$palette-dark: (
+  surface-0: #0d111a,
+  surface-1: #151b27,
+  sidebar: #0a0e16,
+  sidebar-border: #1c2433,
+
+  cold-25: #1a2130,
+  cold-50: #1d2534,
+  cold-75: #222b3b,
+  cold-100: #283244,
+  cold-125: #2e394c,
+  cold-200: #3a4659,
+  cold-225: #405067,
+  cold-300: #5b6a82,
+  cold-350: #7a8aa3,
+  cold-550: #a3b0c3,
+  cold-600: #b4c0d1,
+  cold-650: #aab6c8,
+  cold-850: #dce3ee,
+  cold-900: #eef2f8,
+
+  true-350: #5c5c5c,
+  true-500: #8a8a8a,
+  true-700: #9a9a9a,
+  true-800: #3a3a3a,
+  true-850: #2e2e2e,
+
+  warm-50: #262a33,
+  error-100: #4a2024
+);
+
+// boja akcenta, bira je admin u Profilu kompanije
+// 350 grafikoni, 400 hover, 500 default, 600 tamnija, 700 pressed
+$accents: (
+  "indigo": (
+    primary-350: #8b85f0,
+    primary-400: #6a62ec,
+    primary-500: #4f46e5,
+    primary-600: #4038c4,
+    primary-700: #332ca0
+  ),
+  "teal": (
+    primary-350: #4fb8b0,
+    primary-400: #1aa196,
+    primary-500: #0d9488,
+    primary-600: #0b7a70,
+    primary-700: #095f58
+  ),
+  "sapphire": (
+    primary-350: #6c97dd,
+    primary-400: #3f75cf,
+    primary-500: #1d5fc8,
+    primary-600: #184fa6,
+    primary-700: #133e83
+  ),
+  "amber": (
+    primary-350: #f1b45a,
+    primary-400: #e99b26,
+    primary-500: #d97f06,
+    primary-600: #b46905,
+    primary-700: #8c5204
+  ),
+  "rose": (
+    primary-350: #ec7d9b,
+    primary-400: #e2557b,
+    primary-500: #d63864,
+    primary-600: #b22d53,
+    primary-700: #8c2341
+  )
+);
+
+$default-accent: "indigo";
